@@ -1,9 +1,12 @@
 "use client";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import DeckGL from "@deck.gl/react";
 import { MapView } from "@deck.gl/core";
-import { PathLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
+import { PathLayer, ScatterplotLayer, TextLayer, IconLayer } from "@deck.gl/layers";
+import { Map } from "react-map-gl/maplibre";
+import maplibregl from "maplibre-gl";
 import { useStore } from "@/store/useStore";
+import { interpAlong } from "@/lib/geo";
 import type { Conflict, LngLat, Section, TrainState } from "@/lib/types";
 
 const STATUS_RGB: Record<string, [number, number, number]> = {
@@ -15,13 +18,58 @@ const STATUS_RGB: Record<string, [number, number, number]> = {
   arrived: [90, 100, 115]
 };
 
+const DARK_STYLE = {
+  version: 8,
+  sources: {
+    "carto-dark": {
+      type: "raster" as const,
+      tiles: ["https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"],
+      tileSize: 256,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    }
+  },
+  layers: [
+    {
+      id: "carto-dark",
+      type: "raster" as const,
+      source: "carto-dark",
+      minzoom: 0,
+      maxzoom: 22
+    }
+  ]
+};
+
 const INITIAL_VIEW = {
-  longitude: 73.18,
-  latitude: 19.32,
-  zoom: 8.7,
+  longitude: 79.0,
+  latitude: 22.5,
+  zoom: 4.5,
   pitch: 0,
   bearing: 0
 };
+
+const MAJOR_STATIONS = new Set(["NDLS","CSMT","HWH","MAS","SBC","BZA","NGP","BPL","KOTA","PUNE","HYB","SC","BSP","TATA","VSKP","BBS","DR","LKO","AGC","ET","BPQ","RTM","BRC","ST","BSR","RU","GTL","WADI","SUR","JTJ","SA","CBE","ERS","TVC","NJP","GHY"]);
+
+// White train-shaped mask icon; tinted per-train via getColor (mask:true).
+const TRAIN_SVG = encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="84" viewBox="0 0 40 84">
+    <path d="M20 2 C30 2 35 11 35 24 L35 66 C35 78 29 82 20 82 C11 82 5 78 5 66 L5 24 C5 11 10 2 20 2 Z" fill="white"/>
+    <rect x="11" y="9" width="18" height="7" rx="3" fill="white" opacity="0.55"/>
+  </svg>`
+);
+const TRAIN_ICON = {
+  url: `data:image/svg+xml;charset=utf-8,${TRAIN_SVG}`,
+  width: 40,
+  height: 84,
+  anchorX: 20,
+  anchorY: 42,
+  mask: true
+};
+
+interface Anim {
+  dist: number;
+  bearing: number;
+  initialized: boolean;
+}
 
 function sectionMid(sec: Section): LngLat {
   const g = sec.geometry;
@@ -33,11 +81,33 @@ function canonical(id: string): string {
   return a < b ? `${a}-${b}` : `${b}-${a}`;
 }
 
+function lerpAngle(a: number, b: number, t: number): number {
+  const d = ((b - a + 540) % 360) - 180;
+  return a + d * t;
+}
+
+// ---- viewport culling + LOD helpers ------------------------------------ #
+function viewportBounds(vs: any, pad = 0.4) {
+  const lngSpan = 360 / Math.pow(2, vs.zoom);
+  const latSpan = 170 / Math.pow(2, vs.zoom);
+  return {
+    minLng: vs.longitude - lngSpan * (0.5 + pad),
+    maxLng: vs.longitude + lngSpan * (0.5 + pad),
+    minLat: vs.latitude - latSpan * (0.5 + pad),
+    maxLat: vs.latitude + latSpan * (0.5 + pad),
+  };
+}
+function inBounds(p: LngLat, b: any) {
+  return p[0] >= b.minLng && p[0] <= b.maxLng && p[1] >= b.minLat && p[1] <= b.maxLat;
+}
+function sectionInBounds(s: Section, b: any) {
+  return s.geometry.some((p) => inBounds(p, b));
+}
+
 export default function NetworkMap() {
   const net = useStore((s) => s.net);
   const states = useStore((s) => s.states);
   const conflicts = useStore((s) => s.conflicts);
-  const blocked = useStore((s) => s.blocked);
   const cascade = useStore((s) => s.cascade);
   const selectedTrain = useStore((s) => s.selectedTrain);
   const trackTrain = useStore((s) => s.trackTrain);
@@ -46,43 +116,141 @@ export default function NetworkMap() {
   const showCascade = useStore((s) => s.showCascade);
 
   const [viewState, setViewState] = useState<any>(INITIAL_VIEW);
-  const [pulse, setPulse] = useState(0);
+  const [, setFrame] = useState(0);
 
+  // per-train animated values + recent-position trail (refs => survive renders)
+  const animRef = useRef<Record<string, Anim>>({});
+  const trailRef = useRef<Record<string, LngLat[]>>({});
+  const renderedRef = useRef<Record<string, { pos: LngLat; bearing: number; rgb: [number, number, number] }>>({});
+  const rgbRef = useRef<Record<string, [number, number, number]>>({});
+  const frameCount = useRef(0);
+
+  // ---- the render clock: 60fps interpolation, decoupled from the sim tick --- #
   useEffect(() => {
     let raf = 0;
-    const tick = () => {
-      setPulse((Date.now() % 1200) / 1200);
-      raf = requestAnimationFrame(tick);
+    let lastT = performance.now();
+    const loop = () => {
+      const now = performance.now();
+      const dtReal = (now - lastT) / 1000;
+      lastT = now;
+      stepInterpolation(dtReal, now);
+      frameCount.current++;
+      setFrame((f) => (f + 1) % 1_000_000);
+      raf = requestAnimationFrame(loop);
     };
-    raf = requestAnimationFrame(tick);
+    raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function stepInterpolation(dtReal: number, now: number) {
+    const st = useStore.getState();
+    const geomMap = st.trainGeom;
+    const live = st.mode === "live";
+    const snapAgeSec = live ? Math.min(2, (now - st.lastSnapshotAt) / 1000) : 0;
+
+    for (const t of st.states) {
+      const geom = geomMap[t.number];
+      if (!geom) continue;
+      const total = geom.cum[geom.cum.length - 1];
+      if (!t.active) {
+        // reset so re-entry doesn't tween across the whole line
+        delete animRef.current[t.number];
+        trailRef.current[t.number] = [];
+        continue;
+      }
+      // authoritative distance, dead-reckoned forward in live mode between ticks
+      const target = Math.max(
+        0,
+        Math.min(total, t.distKm + (live ? (t.speedKmh * snapAgeSec) / 3600 : 0))
+      );
+      let a = animRef.current[t.number];
+      if (!a || !a.initialized) {
+        a = { dist: target, bearing: t.bearing, initialized: true };
+        animRef.current[t.number] = a;
+      }
+      // ease toward target (snappier in local mode where target is already 60fps)
+      const k = Math.min(1, dtReal * (live ? 6 : 12));
+      a.dist += (target - a.dist) * k;
+
+      const { pos, bearing } = interpAlong(geom.polyline, geom.cum, a.dist);
+      a.bearing = lerpAngle(a.bearing, bearing, Math.min(1, dtReal * 8));
+
+      // smooth status colour transition
+      const targetRgb = STATUS_RGB[t.status] ?? [200, 200, 200];
+      const cur = rgbRef.current[t.number] ?? targetRgb;
+      const ck = Math.min(1, dtReal * 4);
+      const rgb: [number, number, number] = [
+        cur[0] + (targetRgb[0] - cur[0]) * ck,
+        cur[1] + (targetRgb[1] - cur[1]) * ck,
+        cur[2] + (targetRgb[2] - cur[2]) * ck
+      ];
+      rgbRef.current[t.number] = rgb;
+      renderedRef.current[t.number] = { pos, bearing: a.bearing, rgb };
+
+      // trail: sample periodically for a ~1.5s comet tail
+      if (frameCount.current % 4 === 0 && t.speedKmh > 1) {
+        const trail = (trailRef.current[t.number] ||= []);
+        trail.push(pos);
+        if (trail.length > 18) trail.shift();
+      }
+    }
+  }
+
+  const pulse = (performance.now() % 1200) / 1200;
+
   // follow the tracked train
-  const tracked = states.find((t) => t.number === trackTrain && t.active);
+  const trackedRender = trackTrain ? renderedRef.current[trackTrain] : undefined;
   useEffect(() => {
-    if (tracked) {
+    const r = trackTrain ? renderedRef.current[trackTrain] : undefined;
+    if (r) {
       setViewState((v: any) => ({
         ...v,
-        longitude: tracked.position[0],
-        latitude: tracked.position[1],
+        longitude: r.pos[0],
+        latitude: r.pos[1],
         zoom: Math.max(v.zoom, 10.5),
         transitionDuration: 600
       }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trackTrain, tracked?.position[0], tracked?.position[1]]);
+  }, [trackTrain]);
 
-  const cascadeSections = useMemo(
-    () => new Set(cascade?.sections ?? []),
-    [cascade]
-  );
-  const cascadeTrains = useMemo(
-    () => new Set(cascade?.trains ?? []),
-    [cascade]
-  );
+  // zoom-to-fit route when requested by tracker
+  useEffect(() => {
+    const fitRoute = useStore.getState().fitRoute;
+    if (!fitRoute || fitRoute.length === 0) return;
+    const stations = useStore.getState().net.stations;
+    const coords: LngLat[] = [];
+    for (const code of fitRoute) {
+      const st = stations.find((s) => s.code === code);
+      if (st) coords.push([st.lng, st.lat]);
+    }
+    if (coords.length === 0) return;
+    const lats = coords.map((c) => c[1]);
+    const lngs = coords.map((c) => c[0]);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    const latDiff = Math.max(0.5, maxLat - minLat);
+    const lngDiff = Math.max(0.5, maxLng - minLng);
+    const zoomLat = Math.log2(170 / (latDiff * 1.4));
+    const zoomLng = Math.log2(360 / (lngDiff * 1.4));
+    const zoom = Math.min(Math.max(Math.min(zoomLat, zoomLng), 4), 14);
+    setViewState((v: any) => ({
+      ...v,
+      longitude: (minLng + maxLng) / 2,
+      latitude: (minLat + maxLat) / 2,
+      zoom,
+      transitionDuration: 900
+    }));
+    useStore.getState().setFitRoute(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [useStore.getState().fitRoute]);
 
-  // passenger impact per section (sum of pax on trains currently on it)
+  const cascadeSections = useMemo(() => new Set(cascade?.sections ?? []), [cascade]);
+  const cascadeTrains = useMemo(() => new Set(cascade?.trains ?? []), [cascade]);
+
   const paxBySection = useMemo(() => {
     const m: Record<string, number> = {};
     for (const t of states) {
@@ -94,6 +262,30 @@ export default function NetworkMap() {
     return m;
   }, [states]);
 
+  const active = states.filter((t) => t.active);
+
+  // viewport culling
+  const bounds = viewportBounds(viewState);
+  const vizSections = useMemo(
+    () => net.sections.filter((s) => sectionInBounds(s, bounds)),
+    [net.sections, bounds.minLng, bounds.maxLng, bounds.minLat, bounds.maxLat]
+  );
+  const vizStations = useMemo(
+    () => net.stations.filter((st) => inBounds([st.lng, st.lat], bounds)),
+    [net.stations, bounds.minLng, bounds.maxLng, bounds.minLat, bounds.maxLat]
+  );
+  const vizActive = useMemo(
+    () => active.filter((t) => inBounds(renderedRef.current[t.number]?.pos ?? t.position, bounds)),
+    [active, bounds.minLng, bounds.maxLng, bounds.minLat, bounds.maxLat]
+  );
+  const zoom = viewState.zoom;
+  const showAllLabels = zoom >= 6;
+  const showMajorLabels = zoom >= 4.5;
+  const stationLabelData = useMemo(
+    () => vizStations.filter((s) => showAllLabels || (showMajorLabels && MAJOR_STATIONS.has(s.code))),
+    [vizStations, showAllLabels, showMajorLabels]
+  );
+
   const layers = useMemo(() => {
     const ls: any[] = [];
 
@@ -101,11 +293,10 @@ export default function NetworkMap() {
     ls.push(
       new PathLayer<Section>({
         id: "tracks",
-        data: net.sections,
+        data: vizSections,
         getPath: (d) => d.geometry,
         getColor: (d) => {
           const k = canonical(d.id);
-          if (isBlocked(blocked, d.id)) return [255, 92, 92, 230];
           if (passengerLayer) {
             const pax = paxBySection[k] ?? 0;
             const t = Math.min(1, pax / 4000);
@@ -122,17 +313,15 @@ export default function NetworkMap() {
         getWidth: (d) => (d.line === "single" ? 3.4 : 2.6),
         widthUnits: "pixels",
         capRounded: true,
-        jointRounded: true,
-        pickable: false
+        jointRounded: true
       })
     );
 
-    // cascade / reroute highlight (cyan)
     if (cascadeSections.size) {
       ls.push(
         new PathLayer<Section>({
           id: "cascade-path",
-          data: net.sections.filter((s) => cascadeSections.has(canonical(s.id))),
+          data: vizSections.filter((s) => cascadeSections.has(canonical(s.id))),
           getPath: (d) => d.geometry,
           getColor: [58, 208, 222, Math.round(120 + pulse * 120)],
           getWidth: 5,
@@ -144,26 +333,24 @@ export default function NetworkMap() {
       );
     }
 
-    // stations
+    // stations + labels
     ls.push(
       new ScatterplotLayer({
         id: "stations",
-        data: net.stations,
+        data: vizStations,
         getPosition: (d: any) => [d.lng, d.lat],
         getRadius: 3,
         radiusUnits: "pixels",
         getFillColor: [200, 210, 222, 230],
         getLineColor: [11, 13, 17, 255],
         lineWidthMinPixels: 1,
-        stroked: true,
-        pickable: true,
-        onClick: () => {}
+        stroked: true
       })
     );
     ls.push(
       new TextLayer({
         id: "station-labels",
-        data: net.stations,
+        data: stationLabelData,
         getPosition: (d: any) => [d.lng, d.lat],
         getText: (d: any) => d.code,
         getSize: 10,
@@ -184,7 +371,7 @@ export default function NetworkMap() {
         id: "conflict-glow",
         data: cz,
         getPosition: (d: any) => d.pos,
-        getRadius: (d: any) => 14 + pulse * 16,
+        getRadius: () => 14 + pulse * 16,
         radiusUnits: "pixels",
         getFillColor: (d: any) =>
           d.c.severity === "critical"
@@ -194,49 +381,73 @@ export default function NetworkMap() {
       })
     );
 
-    // active trains — outer glow
-    const active = states.filter((t) => t.active);
+    // motion trails (comet tails) — one PathLayer over all active trains
+    const trailData = active
+      .map((t) => ({ number: t.number, path: trailRef.current[t.number] ?? [], rgb: rgbRef.current[t.number] }))
+      .filter((d) => d.path.length > 1);
+    ls.push(
+      new PathLayer({
+        id: "train-trails",
+        data: trailData,
+        getPath: (d: any) => d.path,
+        getColor: (d: any) => {
+          const c = d.rgb ?? [120, 200, 220];
+          return [Math.round(c[0]), Math.round(c[1]), Math.round(c[2]), 70];
+        },
+        getWidth: 2.2,
+        widthUnits: "pixels",
+        capRounded: true,
+        jointRounded: true,
+        updateTriggers: { getPath: frameCount.current, getColor: frameCount.current }
+      })
+    );
+
+    // glow under each train
     ls.push(
       new ScatterplotLayer({
         id: "train-glow",
-        data: active,
-        getPosition: (d: TrainState) => d.position,
-        getRadius: (d: TrainState) => (d.number === selectedTrain ? 16 : 11),
+        data: vizActive,
+        getPosition: (d: TrainState) => renderedRef.current[d.number]?.pos ?? d.position,
+        getRadius: (d: TrainState) => (d.number === selectedTrain ? 17 : 12),
         radiusUnits: "pixels",
         getFillColor: (d: TrainState) => {
-          const c = STATUS_RGB[d.status] ?? [200, 200, 200];
-          return [c[0], c[1], c[2], 60];
+          const c = rgbRef.current[d.number] ?? STATUS_RGB[d.status] ?? [200, 200, 200];
+          return [Math.round(c[0]), Math.round(c[1]), Math.round(c[2]), 55];
         },
-        updateTriggers: { getRadius: selectedTrain }
+        updateTriggers: { getPosition: frameCount.current, getRadius: selectedTrain, getFillColor: frameCount.current }
       })
     );
-    // cascade ring on affected trains
+
+    // cascade ring
     ls.push(
       new ScatterplotLayer({
         id: "cascade-ring",
-        data: active.filter((t) => cascadeTrains.has(t.number)),
-        getPosition: (d: TrainState) => d.position,
-        getRadius: 13 + pulse * 6,
+        data: vizActive.filter((t) => cascadeTrains.has(t.number)),
+        getPosition: (d: TrainState) => renderedRef.current[d.number]?.pos ?? d.position,
+        getRadius: 14 + pulse * 6,
         radiusUnits: "pixels",
         stroked: true,
         filled: false,
         getLineColor: [58, 208, 222, 230],
         lineWidthMinPixels: 2,
-        updateTriggers: { getRadius: pulse }
+        updateTriggers: { getPosition: frameCount.current, getRadius: pulse }
       })
     );
-    // core dot
+
+    // oriented elongated train markers
     ls.push(
-      new ScatterplotLayer({
-        id: "train-core",
-        data: active,
-        getPosition: (d: TrainState) => d.position,
-        getRadius: (d: TrainState) => (d.number === selectedTrain ? 6.5 : 5),
-        radiusUnits: "pixels",
-        getFillColor: (d: TrainState) => STATUS_RGB[d.status] ?? [200, 200, 200],
-        stroked: true,
-        getLineColor: [11, 13, 17, 255],
-        lineWidthMinPixels: 1.5,
+      new IconLayer({
+        id: "trains",
+        data: vizActive,
+        getIcon: () => TRAIN_ICON as any,
+        getPosition: (d: TrainState) => renderedRef.current[d.number]?.pos ?? d.position,
+        getAngle: (d: TrainState) => -(renderedRef.current[d.number]?.bearing ?? d.bearing),
+        getSize: (d: TrainState) => (d.number === selectedTrain ? 26 : 21),
+        sizeUnits: "pixels",
+        getColor: (d: TrainState) => {
+          const c = rgbRef.current[d.number] ?? STATUS_RGB[d.status] ?? [220, 220, 220];
+          return [Math.round(c[0]), Math.round(c[1]), Math.round(c[2]), 255];
+        },
         pickable: true,
         onClick: (info: any) => {
           if (info.object) {
@@ -244,37 +455,48 @@ export default function NetworkMap() {
             if (info.object.delayMinutes > 0) showCascade(info.object.number);
           }
         },
-        updateTriggers: { getRadius: selectedTrain }
+        updateTriggers: {
+          getPosition: frameCount.current,
+          getAngle: frameCount.current,
+          getColor: frameCount.current,
+          getSize: selectedTrain
+        }
       })
     );
+
     // train number labels
     ls.push(
       new TextLayer({
         id: "train-labels",
-        data: active,
-        getPosition: (d: TrainState) => d.position,
+        data: vizActive,
+        getPosition: (d: TrainState) => renderedRef.current[d.number]?.pos ?? d.position,
         getText: (d: TrainState) => d.number,
         getSize: 11,
         getColor: (d: TrainState) => {
-          const c = STATUS_RGB[d.status] ?? [231, 234, 240];
-          return [c[0], c[1], c[2], 255];
+          const c = rgbRef.current[d.number] ?? STATUS_RGB[d.status] ?? [231, 234, 240];
+          return [Math.round(c[0]), Math.round(c[1]), Math.round(c[2]), 255];
         },
-        getPixelOffset: [0, -13],
+        getPixelOffset: [0, -17],
         fontFamily: "monospace",
         fontWeight: 700,
         characterSet: "auto",
         getTextAnchor: "middle",
         getAlignmentBaseline: "bottom",
-        billboard: true
+        billboard: true,
+        updateTriggers: { getPosition: frameCount.current, getColor: frameCount.current }
       })
     );
 
     return ls;
+    // frameCount.current in deps via setFrame re-render keeps positions fresh
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     net,
-    states,
+    vizSections,
+    vizStations,
+    vizActive,
+    stationLabelData,
     conflicts,
-    blocked,
     pulse,
     selectedTrain,
     cascadeSections,
@@ -294,16 +516,15 @@ export default function NetworkMap() {
         controller={true}
         layers={layers}
         getCursor={({ isHovering }) => (isHovering ? "pointer" : "grab")}
-        style={{ background: "transparent" }}
-      />
+      >
+        <Map
+          mapStyle={DARK_STYLE as any}
+          mapLib={maplibregl}
+          attributionControl={false}
+        />
+      </DeckGL>
     </div>
   );
-}
-
-function isBlocked(blocked: Set<string>, id: string): boolean {
-  if (blocked.has(id)) return true;
-  const [a, b] = id.split("-");
-  return blocked.has(`${b}-${a}`);
 }
 
 function conflictPos(net: any, c: Conflict): LngLat | null {

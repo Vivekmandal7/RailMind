@@ -75,9 +75,9 @@ export default function WhatIf() {
           />
           <InjectBtn
             label="Block"
-            desc="Close KSRA–IGP ghat"
+            desc="Close NGP–BPQ section"
             tone="border-amber/40 text-amber"
-            onClick={() => injectBlock()}
+            onClick={() => injectBlock("NGP-BPQ")}
           />
           <InjectBtn
             label="Fog"

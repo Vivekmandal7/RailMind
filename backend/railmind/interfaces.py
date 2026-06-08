@@ -128,6 +128,77 @@ class Prediction:
 
 
 @dataclass
+class StationForecast:
+    station: str
+    eta_delay_min: int
+
+
+@dataclass
+class DelayForecast:
+    """Delay Forecaster output: predicted delay over a train's next stations."""
+    train: str
+    predicted_delay_min: int
+    horizon_stations: list[StationForecast]
+    model: str  # "ml" | "heuristic"
+    confidence: float
+
+
+@dataclass
+class PassengerImpact:
+    train: str
+    passengers_onboard: int
+    passengers_affected: int
+    connections_at_risk: int
+    likely_to_miss: int
+    occupancy: float
+
+
+@dataclass
+class Anomaly:
+    id: str
+    scope: str  # "train" | "section" | "network"
+    ref: str
+    score: float
+    severity: str  # critical | warning | info
+    message: str
+
+
+@dataclass
+class PlanExplanation:
+    plan_id: str
+    text: str
+    model: str  # llm model id | "rule-based"
+
+
+@dataclass
+class VerifierVote:
+    model: str
+    verdict: str  # "approve" | "reject" | "flag"
+    note: str
+
+
+@dataclass
+class VerifierConsensus:
+    verified: bool
+    agree: int
+    total: int
+    votes: list[VerifierVote]
+    note: str
+    flagged_for_human: bool
+
+
+@dataclass
+class ModuleStatus:
+    """Live status of one brain, surfaced in the AI Engine panel."""
+    key: str
+    name: str
+    status: str  # idle | running | ok | flag | error | off
+    last_action: str
+    latency_ms: int
+    detail: str
+
+
+@dataclass
 class Disruption:
     id: str
     kind: str  # breakdown | block | fog | delay
@@ -200,6 +271,42 @@ class Verifier(ABC):
     def verify(
         self, twin: "DigitalTwinProto", plan: ResolutionPlan, conflict: Conflict
     ) -> tuple[bool, str]: ...
+
+
+class DelayForecaster(ABC):
+    """Predicts each train's delay over its next stations (REAL ML / heuristic)."""
+
+    @abstractmethod
+    def forecast(
+        self, twin: "DigitalTwinProto", states: list[TrainState], ctx: SimContext
+    ) -> list[DelayForecast]: ...
+
+
+class Explainer(ABC):
+    """Turns a plan + impact into a plain-language rationale for the operator."""
+
+    @abstractmethod
+    def explain(
+        self, plan: ResolutionPlan, conflict: Conflict, impact: Optional[PassengerImpact]
+    ) -> PlanExplanation: ...
+
+
+class PassengerImpactEstimator(ABC):
+    """Estimates passengers affected / connections at risk / likely-to-miss."""
+
+    @abstractmethod
+    def estimate(
+        self, twin: "DigitalTwinProto", states: list[TrainState], ctx: SimContext
+    ) -> list[PassengerImpact]: ...
+
+
+class AnomalySentinel(ABC):
+    """Flags unusual network patterns as early warnings (unsupervised ML)."""
+
+    @abstractmethod
+    def scan(
+        self, twin: "DigitalTwinProto", states: list[TrainState], ctx: SimContext
+    ) -> list[Anomaly]: ...
 
 
 class DigitalTwinProto(ABC):

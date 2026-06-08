@@ -37,6 +37,7 @@ export default function Tracker() {
 
   const tracked = states.find((t) => t.number === trackTrain);
   const trackedTrain = net.trains.find((t) => t.number === trackTrain);
+  const setFitRoute = useStore((s) => s.setFitRoute);
 
   return (
     <div className="absolute top-3 left-3 z-10 w-[330px]">
@@ -152,10 +153,18 @@ export default function Tracker() {
             {tracked.estPassengers.toLocaleString()} pax onboard
           </div>
 
+          {trackedTrain && (
+            <button
+              onClick={() => setFitRoute(trackedTrain.route)}
+              className="mt-2 w-full text-xs font-semibold py-1.5 rounded-lg border border-cyan/50 text-cyan hover:bg-cyan/10"
+            >
+              Zoom to route
+            </button>
+          )}
           {tracked.active && tracked.delayMinutes > 0 && (
             <button
               onClick={() => showCascade(tracked.number)}
-              className="mt-2 w-full text-xs font-semibold py-1.5 rounded-lg border border-cyan/50 text-cyan hover:bg-cyan/10"
+              className="mt-1.5 w-full text-xs font-semibold py-1.5 rounded-lg border border-cyan/50 text-cyan hover:bg-cyan/10"
             >
               Show cascade / ripple
             </button>

@@ -5,7 +5,13 @@ import { useStore } from "@/store/useStore";
 /** Drives the SimulationEngine via a fixed real-time interval. */
 export function useSimLoop() {
   const tick = useStore((s) => s.tick);
+  const initLive = useStore((s) => s.initLive);
   const last = useRef<number>(performance.now());
+
+  useEffect(() => {
+    // attempt to connect to the live backend; falls back to local sim on failure
+    initLive();
+  }, [initLive]);
 
   useEffect(() => {
     let raf = 0;

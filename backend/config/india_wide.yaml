@@ -1,0 +1,27 @@
+# RailMind India-wide configuration.
+corridor:
+  id: india-wide
+  name: India-wide Rail Network
+  zone: ALL
+
+data_source:
+  kind: geojson
+  stations: ../data/india_stations.geojson
+  sections: ../data/india_sections.geojson
+  timetable: ../data/india_timetable.json
+
+simulation:
+  tick_hz: 5
+  time_scale: 60.0
+  start_clock: "09:20"
+  loop: true
+
+modules:
+  conflict_detector: rule_based
+  predictor: cascade
+  optimizer: greedy
+  verifier: rule_based
+  autonomous: false
+
+kinematics:
+  station_dwell_min_sec: 30

@@ -28,7 +28,7 @@ from .models import (
 
 CONFIG_PATH = os.environ.get(
     "RAILMIND_CONFIG",
-    str(Path(__file__).resolve().parent.parent / "config" / "mumbai_csmt_igatpuri.yaml"),
+    str(Path(__file__).resolve().parent.parent / "config" / "india_wide.yaml"),
 )
 
 app = FastAPI(title="RailMind Engine", version="1.0.0")

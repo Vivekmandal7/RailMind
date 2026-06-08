@@ -7,10 +7,13 @@ import {
 } from "@/lib/simulationEngine";
 import { proposeResolution } from "@/lib/optimizer";
 import { parseCommand, intentEcho, NLIntent } from "@/lib/nlCommand";
+import { LiveClient } from "@/lib/liveClient";
+import type { TwinSnapshotDTO, NetworkDTO } from "@/lib/contract";
 import type {
   AlertItem,
   Conflict,
   Disruption,
+  LngLat,
   NetworkData,
   ResolutionPlan,
   TrainState
@@ -18,6 +21,127 @@ import type {
 
 const net: NetworkData = loadNetwork();
 const win = simWindow(net);
+
+export interface TrainGeom {
+  polyline: LngLat[];
+  cum: number[];
+}
+interface TrainMeta {
+  name: string;
+  type: string;
+  direction: string;
+  route: string[];
+}
+
+const liveClient = new LiveClient();
+const LOCAL = buildLocalGeom(net);
+
+function buildLocalGeom(n: NetworkData): {
+  geom: Record<string, TrainGeom>;
+  meta: Record<string, TrainMeta>;
+} {
+  const geom: Record<string, TrainGeom> = {};
+  const meta: Record<string, TrainMeta> = {};
+  for (const t of n.trains) {
+    geom[t.number] = { polyline: t.polyline, cum: t.polyCumKm };
+    meta[t.number] = { name: t.name, type: t.type, direction: t.direction, route: t.route };
+  }
+  return { geom, meta };
+}
+
+function buildLiveGeom(dto: NetworkDTO): {
+  geom: Record<string, TrainGeom>;
+  meta: Record<string, TrainMeta>;
+} {
+  const geom: Record<string, TrainGeom> = {};
+  const meta: Record<string, TrainMeta> = {};
+  for (const t of dto.trains) {
+    geom[t.number] = { polyline: t.polyline as LngLat[], cum: t.cum_km };
+    meta[t.number] = { name: t.name, type: t.type, direction: t.direction, route: t.route };
+  }
+  return { geom, meta };
+}
+
+/** Map a backend TwinSnapshot (snake_case DTO) into the UI's runtime shapes. */
+function mapSnapshot(
+  snap: TwinSnapshotDTO,
+  meta: Record<string, TrainMeta>
+): {
+  states: TrainState[];
+  conflicts: Conflict[];
+  plans: ResolutionPlan[];
+  alerts: AlertItem[];
+  appliedPlans: ResolutionPlan[];
+} {
+  const states: TrainState[] = snap.trains.map((t) => {
+    const m = meta[t.number];
+    return {
+      number: t.number,
+      name: m?.name ?? t.number,
+      type: (m?.type as TrainState["type"]) ?? "express",
+      direction: (m?.direction as TrainState["direction"]) ?? "UP",
+      status: t.status as TrainState["status"],
+      position: t.position,
+      bearing: t.heading_deg,
+      speedKmh: t.speed_kmh,
+      distKm: t.dist_km,
+      delayMinutes: t.delay_min,
+      active: t.active,
+      nextStation: t.next_station,
+      prevStation: t.prev_station,
+      currentSection: t.current_section,
+      etaNextSec: t.eta_next_sec,
+      etaFinalSec: t.eta_final_sec,
+      estPassengers: t.est_passengers
+    };
+  });
+
+  const conflicts: Conflict[] = snap.conflicts.map((c) => ({
+    id: c.id,
+    type: c.type as Conflict["type"],
+    severity: c.severity,
+    atSec: c.at_sec,
+    etaSec: c.eta_sec,
+    location: c.location,
+    locationLabel: c.location_label,
+    trains: c.trains,
+    message: c.message,
+    passengersAffected: c.passengers_affected,
+    connectionsAtRisk: c.connections_at_risk
+  }));
+
+  const plans: ResolutionPlan[] = snap.recommendations.map((p) => ({
+    id: p.id,
+    conflictId: p.conflict_id,
+    summary: p.summary,
+    actions: p.actions.map((a) => ({
+      kind: a.kind as any,
+      train: a.train,
+      detail: a.detail,
+      holdSec: a.hold_sec ?? undefined
+    })),
+    delaySavedMin: p.delay_saved_min,
+    conflictsResolved: p.conflicts_resolved,
+    connectionsProtected: p.connections_protected,
+    passengersProtected: p.passengers_protected,
+    verified: p.verified,
+    verifyNote: p.verify_note
+  }));
+
+  const alerts: AlertItem[] = snap.alerts.map((a) => ({
+    id: a.id,
+    severity: a.severity,
+    kind: a.kind,
+    message: a.message,
+    atSec: a.at_sec,
+    countdownSec: a.countdown_sec,
+    trains: a.trains
+  }));
+
+  const appliedPlans = plans.filter((_, i) => snap.recommendations[i].applied);
+
+  return { states, conflicts, plans, alerts, appliedPlans };
+}
 
 export interface CascadeResult {
   source: string;
@@ -59,6 +183,15 @@ interface State {
   plans: ResolutionPlan[];
   alerts: AlertItem[];
 
+  // live transport
+  mode: "live" | "local";
+  connected: boolean;
+  corridorName: string;
+  tickHz: number;
+  trainGeom: Record<string, TrainGeom>;
+  trainMeta: Record<string, TrainMeta>;
+  lastSnapshotAt: number; // performance.now() of the last live frame
+
   // ui
   selectedTrain: string | null;
   trackTrain: string | null;
@@ -66,7 +199,11 @@ interface State {
   passengerLayer: boolean;
   nlLog: NLLog[];
 
+  fitRoute: string[] | null;
+
   // actions
+  initLive: () => Promise<void>;
+  ingestSnapshot: (snap: TwinSnapshotDTO) => void;
   tick: (deltaRealSec: number) => void;
   setPlaying: (p: boolean) => void;
   setSpeed: (s: number) => void;
@@ -86,6 +223,8 @@ interface State {
   showCascade: (n: string) => void;
   clearCascade: () => void;
   togglePassengerLayer: () => void;
+
+  setFitRoute: (codes: string[] | null) => void;
 
   runNL: (cmd: string) => void;
 }
@@ -215,14 +354,71 @@ export const useStore = create<State>((set, get) => ({
   plans: [],
   alerts: [],
 
+  mode: "local",
+  connected: false,
+  corridorName: "Mumbai CSMT \u2013 Igatpuri",
+  tickHz: 60,
+  trainGeom: LOCAL.geom,
+  trainMeta: LOCAL.meta,
+  lastSnapshotAt: 0,
+
   selectedTrain: null,
   trackTrain: null,
   cascade: null,
   passengerLayer: false,
   nlLog: [],
+  fitRoute: null,
+
+  initLive: async () => {
+    const ok = await liveClient.health();
+    if (!ok) {
+      // backend unreachable -> stay in local in-browser simulation mode
+      set({ mode: "local", connected: false });
+      return;
+    }
+    try {
+      const dto = await liveClient.fetchNetwork();
+      const { geom, meta } = buildLiveGeom(dto);
+      set({
+        mode: "live",
+        corridorName: dto.corridor_name,
+        trainGeom: geom,
+        trainMeta: meta
+      });
+      liveClient.onStatus = (c) => set({ connected: c });
+      liveClient.onSnapshot = (snap) => get().ingestSnapshot(snap);
+      liveClient.connect();
+    } catch {
+      set({ mode: "local", connected: false });
+    }
+  },
+
+  ingestSnapshot: (snap) => {
+    const s = get();
+    const mapped = mapSnapshot(snap, s.trainMeta);
+    set({
+      simSec: snap.sim_sec,
+      tickHz: snap.tick_hz || 5,
+      autonomous: snap.autonomous,
+      states: mapped.states,
+      conflicts: mapped.conflicts,
+      plans: mapped.plans,
+      alerts: mapped.alerts,
+      appliedPlans: mapped.appliedPlans,
+      disruptions: snap.disruptions.map((label, i) => ({
+        id: `d${i}`,
+        kind: "delay" as const,
+        label,
+        atSec: 0
+      })),
+      lastSnapshotAt:
+        typeof performance !== "undefined" ? performance.now() : Date.now()
+    });
+  },
 
   tick: (deltaRealSec) => {
     const s = get();
+    if (s.mode === "live") return; // WebSocket drives state in live mode
     if (!s.playing) return;
     let next = s.simSec + deltaRealSec * s.speed;
     if (next >= s.windowEnd) next = s.windowStart; // loop the hour
@@ -246,11 +442,22 @@ export const useStore = create<State>((set, get) => ({
     set(patch);
   },
 
-  setPlaying: (p) => set({ playing: p }),
-  setSpeed: (sp) => set({ speed: sp }),
+  setPlaying: (p) => {
+    if (get().mode === "live") liveClient.send({ action: "control", playing: p });
+    set({ playing: p });
+  },
+  setSpeed: (sp) => {
+    if (get().mode === "live") liveClient.send({ action: "control", time_scale: sp });
+    set({ speed: sp });
+  },
   scrub: (sec) => {
     const s = get();
     const clamped = Math.max(s.windowStart, Math.min(s.windowEnd, sec));
+    if (s.mode === "live") {
+      liveClient.send({ action: "control", playing: false, seek_sec: clamped });
+      set({ simSec: clamped, playing: false });
+      return;
+    }
     set({ simSec: clamped, playing: false, ...recompute({ ...s, simSec: clamped }) });
   },
   resetSim: () => {
@@ -271,6 +478,10 @@ export const useStore = create<State>((set, get) => ({
   },
 
   injectBreakdown: (train) => {
+    if (get().mode === "live") {
+      liveClient.send({ action: "inject", kind: "breakdown", train });
+      return;
+    }
     const s = get();
     const candidates = s.states.filter((t) => t.active && t.speedKmh > 0);
     const pick =
@@ -294,9 +505,13 @@ export const useStore = create<State>((set, get) => ({
   },
 
   injectBlock: (sectionId) => {
+    if (get().mode === "live") {
+      liveClient.send({ action: "inject", kind: "block", section: sectionId ?? "NGP-BPQ" });
+      return;
+    }
     const s = get();
-    // default: block the constrained ghat section
-    const sec = sectionId ?? "KSRA-IGP";
+    // default: block a constrained trunk section
+    const sec = sectionId ?? "NGP-BPQ";
     const blocked = new Set(s.blocked);
     blocked.add(sec);
     const secObj = net.sectionMap[sec];
@@ -315,6 +530,10 @@ export const useStore = create<State>((set, get) => ({
   },
 
   injectFog: () => {
+    if (get().mode === "live") {
+      liveClient.send({ action: "inject", kind: "fog" });
+      return;
+    }
     const s = get();
     const speedFactor = 0.6;
     const disruptions = [
@@ -332,6 +551,11 @@ export const useStore = create<State>((set, get) => ({
   },
 
   clearDisruptions: () => {
+    if (get().mode === "live") {
+      liveClient.send({ action: "inject", kind: "clear" });
+      set({ cascade: null });
+      return;
+    }
     const s = get();
     const base = {
       ...s,
@@ -353,9 +577,18 @@ export const useStore = create<State>((set, get) => ({
     });
   },
 
-  applyPlan: (plan) => applyPlanInternal(set, get, plan, false),
+  applyPlan: (plan) => {
+    if (get().mode === "live") {
+      liveClient.send({ action: "apply", conflict_id: plan.conflictId });
+      return;
+    }
+    applyPlanInternal(set, get, plan, false);
+  },
 
-  setAutonomous: (on) => set({ autonomous: on }),
+  setAutonomous: (on) => {
+    if (get().mode === "live") liveClient.send({ action: "autonomous", enabled: on });
+    set({ autonomous: on });
+  },
 
   selectTrain: (n) => set({ selectedTrain: n }),
   setTrack: (n) => set({ trackTrain: n, selectedTrain: n ?? get().selectedTrain }),
@@ -365,9 +598,25 @@ export const useStore = create<State>((set, get) => ({
   },
   clearCascade: () => set({ cascade: null }),
   togglePassengerLayer: () => set({ passengerLayer: !get().passengerLayer }),
+  setFitRoute: (codes) => set({ fitRoute: codes }),
 
   runNL: (cmd) => {
     const s = get();
+    if (s.mode === "live") {
+      // backend simulates the what-if AND returns the impact explanation
+      const echo = intentEcho(parseCommand(cmd, net), net);
+      const pending: NLLog = { id: Date.now(), cmd, echo, explanation: "Simulating\u2026" };
+      set({ nlLog: [pending, ...s.nlLog].slice(0, 8) });
+      liveClient.whatif(cmd).then((res) => {
+        if (!res) return;
+        set((st) => ({
+          nlLog: st.nlLog.map((l) =>
+            l.id === pending.id ? { ...l, explanation: res.explanation } : l
+          )
+        }));
+      });
+      return;
+    }
     const intent = parseCommand(cmd, net);
     const echo = intentEcho(intent, net);
     applyIntent(set, get, intent);
