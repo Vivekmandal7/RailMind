@@ -1,0 +1,30 @@
+# RailMind corridor configuration.
+# Load ANY corridor by pointing these paths at its data and tuning sim params.
+corridor:
+  id: csmt-igatpuri
+  name: Mumbai CSMT - Igatpuri (Central Railway)
+  zone: CR
+
+data_source:
+  kind: geojson            # which DataSource implementation to use
+  stations: ../data/stations.geojson
+  sections: ../data/sections.geojson
+  timetable: ../data/timetable.json
+
+simulation:
+  tick_hz: 5               # backend broadcast rate (Hz)
+  time_scale: 60.0         # accelerated sim seconds per real second
+  start_clock: "09:20"     # initial sim clock (HH:MM); null -> window start
+  loop: true               # loop the window when it ends
+
+# Feature flags: toggle half-built modules without breaking the running app.
+modules:
+  conflict_detector: rule_based
+  predictor: cascade
+  optimizer: greedy
+  verifier: rule_based
+  autonomous: false        # auto-apply critical verified plans
+
+kinematics:
+  # ease-in/ease-out (smootherstep) acceleration model between stops
+  station_dwell_min_sec: 30

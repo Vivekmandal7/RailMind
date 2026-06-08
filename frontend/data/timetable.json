@@ -1,0 +1,139 @@
+{
+  "source": "Indian Railways public timetable subset (data.gov.in style) for the CSMT-Igatpuri corridor. Times are representative.",
+  "baseDate": "2024-01-01",
+  "trains": [
+    {
+      "number": "12137",
+      "name": "Punjab Mail",
+      "type": "express",
+      "direction": "UP",
+      "coaches": 22,
+      "capacityPax": 1500,
+      "route": ["CSMT", "BY", "DR", "CLA", "GC", "BND", "MLND", "TNA", "MBQ", "DIVA", "DI", "KYN", "SHAD", "TLA", "KDV", "VSD", "ASO", "ATG", "KHDI", "KSRA", "IGP"],
+      "schedule": [
+        { "station": "CSMT", "arr": "08:00", "dep": "08:00" },
+        { "station": "DR", "arr": "08:12", "dep": "08:14" },
+        { "station": "TNA", "arr": "08:35", "dep": "08:37" },
+        { "station": "KYN", "arr": "08:55", "dep": "08:58" },
+        { "station": "KSRA", "arr": "10:05", "dep": "10:08" },
+        { "station": "IGP", "arr": "10:45", "dep": "10:50" }
+      ]
+    },
+    {
+      "number": "12109",
+      "name": "Panchavati Express",
+      "type": "express",
+      "direction": "UP",
+      "coaches": 20,
+      "capacityPax": 1350,
+      "route": ["CSMT", "BY", "DR", "CLA", "GC", "BND", "MLND", "TNA", "MBQ", "DIVA", "DI", "KYN", "SHAD", "TLA", "KDV", "VSD", "ASO", "ATG", "KHDI", "KSRA", "IGP"],
+      "schedule": [
+        { "station": "CSMT", "arr": "08:20", "dep": "08:20" },
+        { "station": "DR", "arr": "08:33", "dep": "08:35" },
+        { "station": "TNA", "arr": "08:55", "dep": "08:57" },
+        { "station": "KYN", "arr": "09:18", "dep": "09:20" },
+        { "station": "KSRA", "arr": "10:30", "dep": "10:33" },
+        { "station": "IGP", "arr": "11:08", "dep": "11:12" }
+      ]
+    },
+    {
+      "number": "12289",
+      "name": "Nagpur Duronto",
+      "type": "express",
+      "direction": "UP",
+      "coaches": 24,
+      "capacityPax": 1600,
+      "route": ["CSMT", "DR", "CLA", "GC", "BND", "MLND", "TNA", "MBQ", "DIVA", "DI", "KYN", "SHAD", "TLA", "KDV", "VSD", "ASO", "ATG", "KHDI", "KSRA", "IGP"],
+      "schedule": [
+        { "station": "CSMT", "arr": "08:40", "dep": "08:40" },
+        { "station": "TNA", "arr": "09:10", "dep": "09:12" },
+        { "station": "KYN", "arr": "09:30", "dep": "09:32" },
+        { "station": "KSRA", "arr": "10:40", "dep": "10:42" },
+        { "station": "IGP", "arr": "11:18", "dep": "11:22" }
+      ]
+    },
+    {
+      "number": "12534",
+      "name": "Pushpak Express",
+      "type": "express",
+      "direction": "DOWN",
+      "coaches": 22,
+      "capacityPax": 1500,
+      "route": ["IGP", "KSRA", "KHDI", "ATG", "ASO", "VSD", "KDV", "TLA", "SHAD", "KYN", "DI", "DIVA", "MBQ", "TNA", "MLND", "BND", "GC", "CLA", "DR", "BY", "CSMT"],
+      "schedule": [
+        { "station": "IGP", "arr": "10:15", "dep": "10:15" },
+        { "station": "KSRA", "arr": "10:50", "dep": "10:53" },
+        { "station": "KYN", "arr": "11:25", "dep": "11:28" },
+        { "station": "TNA", "arr": "11:50", "dep": "11:52" },
+        { "station": "CSMT", "arr": "12:25", "dep": "12:25" }
+      ]
+    },
+    {
+      "number": "11061",
+      "name": "Pawan Express",
+      "type": "express",
+      "direction": "UP",
+      "coaches": 21,
+      "capacityPax": 1450,
+      "route": ["CSMT", "DR", "CLA", "GC", "BND", "MLND", "TNA", "MBQ", "DIVA", "DI", "KYN", "SHAD", "TLA", "KDV", "VSD", "ASO", "ATG", "KHDI", "KSRA", "IGP"],
+      "schedule": [
+        { "station": "CSMT", "arr": "09:00", "dep": "09:00" },
+        { "station": "DR", "arr": "09:13", "dep": "09:15" },
+        { "station": "KYN", "arr": "09:50", "dep": "09:53" },
+        { "station": "KSRA", "arr": "11:00", "dep": "11:03" },
+        { "station": "IGP", "arr": "11:40", "dep": "11:45" }
+      ]
+    },
+    {
+      "number": "96501",
+      "name": "CSMT - Kasara Local",
+      "type": "local",
+      "direction": "UP",
+      "coaches": 12,
+      "capacityPax": 2600,
+      "route": ["CSMT", "BY", "DR", "CLA", "GC", "BND", "MLND", "TNA", "MBQ", "DIVA", "DI", "KYN", "SHAD", "TLA", "KDV", "VSD", "ASO", "ATG", "KHDI", "KSRA"],
+      "schedule": [
+        { "station": "CSMT", "arr": "08:10", "dep": "08:10" },
+        { "station": "DR", "arr": "08:25", "dep": "08:26" },
+        { "station": "CLA", "arr": "08:33", "dep": "08:34" },
+        { "station": "TNA", "arr": "09:00", "dep": "09:01" },
+        { "station": "KYN", "arr": "09:25", "dep": "09:27" },
+        { "station": "TLA", "arr": "09:45", "dep": "09:46" },
+        { "station": "ASO", "arr": "10:05", "dep": "10:06" },
+        { "station": "KSRA", "arr": "10:40", "dep": "10:40" }
+      ]
+    },
+    {
+      "number": "95012",
+      "name": "Kasara - Kalyan Local",
+      "type": "local",
+      "direction": "DOWN",
+      "coaches": 12,
+      "capacityPax": 2600,
+      "route": ["KSRA", "KHDI", "ATG", "ASO", "VSD", "KDV", "TLA", "SHAD", "KYN"],
+      "schedule": [
+        { "station": "KSRA", "arr": "09:50", "dep": "09:50" },
+        { "station": "ASO", "arr": "10:15", "dep": "10:16" },
+        { "station": "TLA", "arr": "10:35", "dep": "10:36" },
+        { "station": "KYN", "arr": "11:00", "dep": "11:00" }
+      ]
+    },
+    {
+      "number": "96521",
+      "name": "CSMT - Titwala Local",
+      "type": "local",
+      "direction": "UP",
+      "coaches": 12,
+      "capacityPax": 2600,
+      "route": ["CSMT", "BY", "DR", "CLA", "GC", "BND", "MLND", "TNA", "MBQ", "DIVA", "DI", "KYN", "SHAD", "TLA"],
+      "schedule": [
+        { "station": "CSMT", "arr": "08:30", "dep": "08:30" },
+        { "station": "DR", "arr": "08:45", "dep": "08:46" },
+        { "station": "CLA", "arr": "08:53", "dep": "08:54" },
+        { "station": "TNA", "arr": "09:20", "dep": "09:21" },
+        { "station": "KYN", "arr": "09:45", "dep": "09:47" },
+        { "station": "TLA", "arr": "10:00", "dep": "10:00" }
+      ]
+    }
+  ]
+}

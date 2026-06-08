@@ -1,0 +1,27 @@
+{
+  "type": "FeatureCollection",
+  "name": "CSMT-Igatpuri Corridor Sections (Central Railway)",
+  "source": "Track sections with line type and capacity. Geometry approximates real alignment; ghat section includes shape points.",
+  "features": [
+    { "type": "Feature", "properties": { "from": "CSMT", "to": "BY", "line": "double", "capacity": 4 }, "geometry": { "type": "LineString", "coordinates": [[72.8355, 18.9398], [72.8340, 18.9560], [72.8331, 18.9769]] } },
+    { "type": "Feature", "properties": { "from": "BY", "to": "DR", "line": "double", "capacity": 4 }, "geometry": { "type": "LineString", "coordinates": [[72.8331, 18.9769], [72.8390, 18.9980], [72.8434, 19.0186]] } },
+    { "type": "Feature", "properties": { "from": "DR", "to": "CLA", "line": "double", "capacity": 4 }, "geometry": { "type": "LineString", "coordinates": [[72.8434, 19.0186], [72.8620, 19.0420], [72.8794, 19.0654]] } },
+    { "type": "Feature", "properties": { "from": "CLA", "to": "GC", "line": "double", "capacity": 4 }, "geometry": { "type": "LineString", "coordinates": [[72.8794, 19.0654], [72.8940, 19.0760], [72.9081, 19.0860]] } },
+    { "type": "Feature", "properties": { "from": "GC", "to": "BND", "line": "double", "capacity": 4 }, "geometry": { "type": "LineString", "coordinates": [[72.9081, 19.0860], [72.9230, 19.1160], [72.9370, 19.1440]] } },
+    { "type": "Feature", "properties": { "from": "BND", "to": "MLND", "line": "double", "capacity": 4 }, "geometry": { "type": "LineString", "coordinates": [[72.9370, 19.1440], [72.9470, 19.1590], [72.9560, 19.1720]] } },
+    { "type": "Feature", "properties": { "from": "MLND", "to": "TNA", "line": "double", "capacity": 4 }, "geometry": { "type": "LineString", "coordinates": [[72.9560, 19.1720], [72.9660, 19.1800], [72.9750, 19.1860]] } },
+    { "type": "Feature", "properties": { "from": "TNA", "to": "MBQ", "line": "double", "capacity": 3 }, "geometry": { "type": "LineString", "coordinates": [[72.9750, 19.1860], [72.9990, 19.1920], [73.0230, 19.1880]] } },
+    { "type": "Feature", "properties": { "from": "MBQ", "to": "DIVA", "line": "double", "capacity": 3 }, "geometry": { "type": "LineString", "coordinates": [[73.0230, 19.1880], [73.0310, 19.1850], [73.0390, 19.1830]] } },
+    { "type": "Feature", "properties": { "from": "DIVA", "to": "DI", "line": "double", "capacity": 3 }, "geometry": { "type": "LineString", "coordinates": [[73.0390, 19.1830], [73.0640, 19.2000], [73.0890, 19.2160]] } },
+    { "type": "Feature", "properties": { "from": "DI", "to": "KYN", "line": "double", "capacity": 3 }, "geometry": { "type": "LineString", "coordinates": [[73.0890, 19.2160], [73.1100, 19.2280], [73.1305, 19.2403]] } },
+    { "type": "Feature", "properties": { "from": "KYN", "to": "SHAD", "line": "double", "capacity": 2 }, "geometry": { "type": "LineString", "coordinates": [[73.1305, 19.2403], [73.1370, 19.2470], [73.1430, 19.2530]] } },
+    { "type": "Feature", "properties": { "from": "SHAD", "to": "TLA", "line": "double", "capacity": 2 }, "geometry": { "type": "LineString", "coordinates": [[73.1430, 19.2530], [73.1780, 19.2740], [73.2110, 19.2950]] } },
+    { "type": "Feature", "properties": { "from": "TLA", "to": "KDV", "line": "double", "capacity": 2 }, "geometry": { "type": "LineString", "coordinates": [[73.2110, 19.2950], [73.2320, 19.3140], [73.2520, 19.3320]] } },
+    { "type": "Feature", "properties": { "from": "KDV", "to": "VSD", "line": "double", "capacity": 2 }, "geometry": { "type": "LineString", "coordinates": [[73.2520, 19.3320], [73.2580, 19.3700], [73.2620, 19.4080]] } },
+    { "type": "Feature", "properties": { "from": "VSD", "to": "ASO", "line": "double", "capacity": 2 }, "geometry": { "type": "LineString", "coordinates": [[73.2620, 19.4080], [73.2900, 19.4300], [73.3190, 19.4530]] } },
+    { "type": "Feature", "properties": { "from": "ASO", "to": "ATG", "line": "double", "capacity": 2 }, "geometry": { "type": "LineString", "coordinates": [[73.3190, 19.4530], [73.3410, 19.4880], [73.3640, 19.5230]] } },
+    { "type": "Feature", "properties": { "from": "ATG", "to": "KHDI", "line": "single", "capacity": 1 }, "geometry": { "type": "LineString", "coordinates": [[73.3640, 19.5230], [73.3950, 19.5540], [73.4250, 19.5860]] } },
+    { "type": "Feature", "properties": { "from": "KHDI", "to": "KSRA", "line": "single", "capacity": 1 }, "geometry": { "type": "LineString", "coordinates": [[73.4250, 19.5860], [73.4550, 19.6130], [73.4853, 19.6406]] } },
+    { "type": "Feature", "properties": { "from": "KSRA", "to": "IGP", "line": "single", "capacity": 1, "ghat": true }, "geometry": { "type": "LineString", "coordinates": [[73.4853, 19.6406], [73.5050, 19.6520], [73.5180, 19.6700], [73.5320, 19.6760], [73.5450, 19.6880], [73.5614, 19.6967]] } }
+  ]
+}
