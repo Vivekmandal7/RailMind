@@ -308,7 +308,9 @@ function registerConflict(
     single: boolean;
   }
 ) {
-  const key = `${d.type}:${d.location}:${d.trains.slice().sort().join(",")}`;
+  // collapse the evolving subset/superset of one physical event at a location
+  // into a single conflict (the earliest projected occurrence).
+  const key = `${d.type}:${canonical(d.location)}`;
   if (found.has(key)) return; // keep earliest occurrence
 
   const trainObjs = d.trains

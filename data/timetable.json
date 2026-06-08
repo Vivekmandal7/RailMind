@@ -61,11 +61,11 @@
       "capacityPax": 1500,
       "route": ["IGP", "KSRA", "KHDI", "ATG", "ASO", "VSD", "KDV", "TLA", "SHAD", "KYN", "DI", "DIVA", "MBQ", "TNA", "MLND", "BND", "GC", "CLA", "DR", "BY", "CSMT"],
       "schedule": [
-        { "station": "IGP", "arr": "09:30", "dep": "09:30" },
-        { "station": "KSRA", "arr": "10:05", "dep": "10:08" },
-        { "station": "KYN", "arr": "11:10", "dep": "11:13" },
-        { "station": "TNA", "arr": "11:35", "dep": "11:37" },
-        { "station": "CSMT", "arr": "12:10", "dep": "12:10" }
+        { "station": "IGP", "arr": "10:15", "dep": "10:15" },
+        { "station": "KSRA", "arr": "10:50", "dep": "10:53" },
+        { "station": "KYN", "arr": "11:25", "dep": "11:28" },
+        { "station": "TNA", "arr": "11:50", "dep": "11:52" },
+        { "station": "CSMT", "arr": "12:25", "dep": "12:25" }
       ]
     },
     {

@@ -196,7 +196,7 @@ export const useStore = create<State>((set, get) => ({
   windowStart: win.start,
   windowEnd: win.end,
 
-  simSec: win.start,
+  simSec: 9 * 3600 + 1200, // 09:20 — corridor busy, ghat conflicts in look-ahead
   playing: true,
   speed: 60,
 
