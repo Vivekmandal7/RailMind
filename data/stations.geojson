@@ -1,0 +1,28 @@
+{
+  "type": "FeatureCollection",
+  "name": "CSMT-Igatpuri Corridor Stations (Central Railway)",
+  "source": "Indian Railways station locations (datameet/railways style), coordinates approximate to real positions.",
+  "features": [
+    { "type": "Feature", "properties": { "code": "CSMT", "name": "Mumbai CSMT", "platforms": 18 }, "geometry": { "type": "Point", "coordinates": [72.8355, 18.9398] } },
+    { "type": "Feature", "properties": { "code": "BY", "name": "Byculla", "platforms": 6 }, "geometry": { "type": "Point", "coordinates": [72.8331, 18.9769] } },
+    { "type": "Feature", "properties": { "code": "DR", "name": "Dadar", "platforms": 8 }, "geometry": { "type": "Point", "coordinates": [72.8434, 19.0186] } },
+    { "type": "Feature", "properties": { "code": "CLA", "name": "Kurla", "platforms": 8 }, "geometry": { "type": "Point", "coordinates": [72.8794, 19.0654] } },
+    { "type": "Feature", "properties": { "code": "GC", "name": "Ghatkopar", "platforms": 4 }, "geometry": { "type": "Point", "coordinates": [72.9081, 19.0860] } },
+    { "type": "Feature", "properties": { "code": "BND", "name": "Bhandup", "platforms": 4 }, "geometry": { "type": "Point", "coordinates": [72.9370, 19.1440] } },
+    { "type": "Feature", "properties": { "code": "MLND", "name": "Mulund", "platforms": 4 }, "geometry": { "type": "Point", "coordinates": [72.9560, 19.1720] } },
+    { "type": "Feature", "properties": { "code": "TNA", "name": "Thane", "platforms": 10 }, "geometry": { "type": "Point", "coordinates": [72.9750, 19.1860] } },
+    { "type": "Feature", "properties": { "code": "MBQ", "name": "Mumbra", "platforms": 2 }, "geometry": { "type": "Point", "coordinates": [73.0230, 19.1880] } },
+    { "type": "Feature", "properties": { "code": "DIVA", "name": "Diva Junction", "platforms": 7 }, "geometry": { "type": "Point", "coordinates": [73.0390, 19.1830] } },
+    { "type": "Feature", "properties": { "code": "DI", "name": "Dombivli", "platforms": 5 }, "geometry": { "type": "Point", "coordinates": [73.0890, 19.2160] } },
+    { "type": "Feature", "properties": { "code": "KYN", "name": "Kalyan Junction", "platforms": 9 }, "geometry": { "type": "Point", "coordinates": [73.1305, 19.2403] } },
+    { "type": "Feature", "properties": { "code": "SHAD", "name": "Shahad", "platforms": 3 }, "geometry": { "type": "Point", "coordinates": [73.1430, 19.2530] } },
+    { "type": "Feature", "properties": { "code": "TLA", "name": "Titwala", "platforms": 4 }, "geometry": { "type": "Point", "coordinates": [73.2110, 19.2950] } },
+    { "type": "Feature", "properties": { "code": "KDV", "name": "Khadavli", "platforms": 2 }, "geometry": { "type": "Point", "coordinates": [73.2520, 19.3320] } },
+    { "type": "Feature", "properties": { "code": "VSD", "name": "Vasind", "platforms": 2 }, "geometry": { "type": "Point", "coordinates": [73.2620, 19.4080] } },
+    { "type": "Feature", "properties": { "code": "ASO", "name": "Asangaon", "platforms": 3 }, "geometry": { "type": "Point", "coordinates": [73.3190, 19.4530] } },
+    { "type": "Feature", "properties": { "code": "ATG", "name": "Atgaon", "platforms": 2 }, "geometry": { "type": "Point", "coordinates": [73.3640, 19.5230] } },
+    { "type": "Feature", "properties": { "code": "KHDI", "name": "Khardi", "platforms": 2 }, "geometry": { "type": "Point", "coordinates": [73.4250, 19.5860] } },
+    { "type": "Feature", "properties": { "code": "KSRA", "name": "Kasara", "platforms": 4 }, "geometry": { "type": "Point", "coordinates": [73.4853, 19.6406] } },
+    { "type": "Feature", "properties": { "code": "IGP", "name": "Igatpuri", "platforms": 5 }, "geometry": { "type": "Point", "coordinates": [73.5614, 19.6967] } }
+  ]
+}
