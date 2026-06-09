@@ -9,10 +9,12 @@ import { useEffect } from "react";
  *  and swallow ONLY abort errors; everything else re-throws untouched. */
 function isAbort(err: unknown): boolean {
   if (err == null) return false;
-  const e = err as { name?: string; message?: string };
+  const e = err as { name?: string; message?: string; stack?: string };
   let s = "";
   try {
-    s = `${e.name ?? ""} ${e.message ?? ""} ${String(err)}`;
+    // include the stack — Mapbox's render-abort stack contains "abortTile",
+    // so this matches even if name/message are odd on some error objects.
+    s = `${e.name ?? ""} ${e.message ?? ""} ${e.stack ?? ""} ${String(err)}`;
   } catch {
     s = "";
   }
