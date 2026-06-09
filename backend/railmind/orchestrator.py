@@ -380,6 +380,7 @@ class Orchestrator:
         alerts = self._build_alerts(self._conflicts, states)
         trains = [self._train_model(s) for s in states]
         return TwinSnapshot(
+            corridor_id=getattr(self, "corridor_id", ""),
             sim_sec=self.sim_sec,
             tick_hz=0,
             time_scale=self.time_scale,

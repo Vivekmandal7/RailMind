@@ -193,6 +193,7 @@ class LiveStatusModel(BaseModel):
 
 class TwinSnapshot(BaseModel):
     """One broadcast frame. The heartbeat of the system."""
+    corridor_id: str = ""
     sim_sec: float
     tick_hz: float
     time_scale: float

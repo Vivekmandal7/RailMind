@@ -26,6 +26,10 @@ import { pickBlockSection, labelSection } from "@/lib/disruptionTarget";
 const net: NetworkData = loadIndiaNetwork();
 const win = simWindow(net);
 
+// Corridor this tab loaded its network for; used to detect a backend corridor
+// switch (from another tab) and resync via reload.
+let loadedCorridorId = "";
+
 function applyLocalIndiaNet(): Partial<State> {
   const indiaNet = loadIndiaNetwork();
   const { geom, meta } = buildLocalGeom(indiaNet);
@@ -491,6 +495,7 @@ export const useStore = create<State>((set, get) => ({
     }
     try {
       const dto = await liveClient.fetchNetwork();
+      loadedCorridorId = dto.corridor_id;
       const liveNet = networkFromDTO(dto);
       const { geom, meta } = buildLiveGeom(dto);
       const win = simWindow(liveNet);
@@ -526,6 +531,17 @@ export const useStore = create<State>((set, get) => ({
   },
 
   ingestSnapshot: (snap) => {
+    // Corridor switched on the backend (e.g. another tab) → this tab is stale.
+    // Reload once so its network/meta resync instead of streaming mismatched data.
+    if (
+      typeof window !== "undefined" &&
+      snap.corridor_id &&
+      loadedCorridorId &&
+      snap.corridor_id !== loadedCorridorId
+    ) {
+      window.location.reload();
+      return;
+    }
     const s = get();
     const mapped = mapSnapshot(snap, s.trainMeta);
     set({

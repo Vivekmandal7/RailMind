@@ -145,6 +145,7 @@ export interface LiveStatusDTO {
 }
 
 export interface TwinSnapshotDTO {
+  corridor_id?: string;
   sim_sec: number;
   tick_hz: number;
   time_scale: number;
