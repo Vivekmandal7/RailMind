@@ -95,8 +95,12 @@ class Orchestrator:
         self.window_start, self.window_end = self._compute_window()
         self.sim_sec = start_clock_sec if start_clock_sec is not None else self.window_start
         # Loop back to the (busy) start clock rather than the empty window edge,
-        # so the corridor never sits with zero active trains for long.
+        # so the corridor never sits with zero active trains for long. Loop once
+        # departures stop (last dep + 30 min) instead of waiting for every train
+        # to arrive — keeps platforms occupied through the whole cycle.
         self._loop_reset = self.sim_sec
+        last_dep = max(t.schedule[0].dep for t in self.net.trains)
+        self._loop_end = min(self.window_end, max(self._loop_reset + 1800, last_dep + 1800))
         self.playing = True
 
         self.delays_sec: dict[str, float] = {}
@@ -162,7 +166,8 @@ class Orchestrator:
         on a separate cadence off the event loop — see run_pipeline()."""
         if self.playing:
             self.sim_sec += real_dt * self.time_scale
-            if self.sim_sec >= self.window_end:
+            limit = self._loop_end if self.loop else self.window_end
+            if self.sim_sec >= limit:
                 self.sim_sec = self._loop_reset if self.loop else self.window_end
         self._refresh_live()
 

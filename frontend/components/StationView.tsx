@@ -166,11 +166,17 @@ export default function StationView({ code, onClose }: Props) {
                         {t.number}
                       </span>
                       <span className="text-[9px] font-semibold truncate opacity-90">{t.name}</span>
-                      {t.delayMinutes > 0 && (
-                        <span className="ml-auto mr-2 font-mono text-[9px] font-bold shrink-0">
-                          +{t.delayMinutes}m
+                      <span className="ml-auto mr-1.5 flex items-center gap-1 shrink-0">
+                        {t.delayMinutes > 0 && (
+                          <span className="font-mono text-[9px] font-bold">+{t.delayMinutes}m</span>
+                        )}
+                        <span
+                          className="text-[10px] font-black leading-none"
+                          title={`${t.direction} line`}
+                        >
+                          {t.direction === "UP" ? "▲" : "▼"}
                         </span>
-                      )}
+                      </span>
                     </div>
                   </div>
                 ) : (
@@ -180,6 +186,51 @@ export default function StationView({ code, onClose }: Props) {
                 )}
               </div>
             ))}
+
+            {/* main through line — trains crossing without stopping */}
+            {board.crossing.length > 0 && (
+              <div
+                className="relative mt-1 rounded-[3px] overflow-hidden"
+                style={{
+                  height: 22,
+                  background: "linear-gradient(180deg,#15202e,#080c12)",
+                  border: "1px dashed #45556a",
+                  boxShadow: "0 8px 0 #06090e, 0 13px 15px rgba(0,0,0,.6)"
+                }}
+              >
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[8px] font-mono font-bold text-amber/70 z-10">
+                  THRU
+                </span>
+                {board.crossing.map((t, i) => (
+                  <div
+                    key={t.number}
+                    className="coach-crossing absolute rounded-[3px] overflow-hidden"
+                    style={{
+                      top: -9,
+                      left: 0,
+                      width: 86,
+                      height: 26,
+                      animationDelay: `${i * 0.9}s`,
+                      background: `linear-gradient(180deg,#ffffff66, ${statusHex(t.status)} 24%, ${statusHex(t.status)}cc)`,
+                      border: `1px solid ${statusHex(t.status)}`,
+                      boxShadow: "0 5px 9px rgba(0,0,0,.6)",
+                      color: "#0a0f16"
+                    }}
+                  >
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        backgroundImage:
+                          "repeating-linear-gradient(90deg, transparent 0 14px, rgba(8,12,18,.4) 14px 16px)"
+                      }}
+                    />
+                    <span className="absolute inset-0 flex items-center px-2 font-mono text-[10px] font-extrabold">
+                      {t.number}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

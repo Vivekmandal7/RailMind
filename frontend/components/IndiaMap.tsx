@@ -657,7 +657,7 @@ export default function IndiaMap() {
       interleaved: true,
       layers: [],
       // forgiving hit area so small station dots + trains are easy to click
-      pickingRadius: 8,
+      pickingRadius: 16,
       onClick: (info: PickingInfo) => {
         if (isTrainPick(info)) {
           selectTrainRef.current(info.object.number);

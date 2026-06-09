@@ -104,6 +104,15 @@ body {
   animation: coachArrive 0.75s cubic-bezier(0.22, 0.68, 0.3, 1) both;
 }
 
+/* A train running THROUGH the station on the main line (never stops). */
+@keyframes crossingRun {
+  from { transform: translateZ(34px) translateX(-40%); }
+  to   { transform: translateZ(34px) translateX(560%); }
+}
+.coach-crossing {
+  animation: crossingRun 2.6s linear infinite;
+}
+
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
