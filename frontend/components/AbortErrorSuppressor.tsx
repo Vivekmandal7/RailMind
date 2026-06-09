@@ -40,6 +40,23 @@ if (typeof window !== "undefined") {
         if (!isAbort(err)) throw err;
       }
     });
+
+  // Mapbox also logs the abort via console.error (e.g. when switching styles /
+  // satellite), which Next.js's dev overlay surfaces as an error toast. Drop
+  // only benign abort logs; pass everything else through untouched.
+  const cw = window as unknown as { __railmindConsolePatched?: boolean };
+  if (!cw.__railmindConsolePatched) {
+    cw.__railmindConsolePatched = true;
+    const origError = console.error.bind(console);
+    console.error = (...args: unknown[]) => {
+      for (const a of args) {
+        if (isAbort(a) || /abort|signal is aborted/i.test(String((a as { message?: string })?.message ?? a))) {
+          return;
+        }
+      }
+      origError(...args);
+    };
+  }
 }
 
 export default function AbortErrorSuppressor() {
