@@ -116,23 +116,47 @@ export default function StationView({ code, onClose }: Props) {
                 />
                 {t ? (
                   <div
-                    className="absolute left-8 right-2 rounded-[5px] flex items-center gap-1.5 px-2"
+                    className="absolute left-8 right-2 rounded-[5px] overflow-hidden"
                     style={{
                       top: -13,
                       height: 34,
                       transform: "translateZ(26px)",
-                      // glossy top highlight + body colour + rounded-coach inset
-                      background: `linear-gradient(180deg,#ffffff66, ${statusHex(t.status)} 26%, ${statusHex(t.status)}cc)`,
                       border: `1px solid ${statusHex(t.status)}`,
-                      boxShadow: `0 9px 13px rgba(0,0,0,.6), 0 0 15px ${statusHex(t.status)}77, inset 0 -7px 9px ${statusHex(t.status)}99`,
+                      boxShadow: `0 9px 13px rgba(0,0,0,.6), 0 0 15px ${statusHex(t.status)}77`,
                       color: "#0a0f16"
                     }}
                   >
-                    <span className="font-mono text-[12px] font-extrabold tracking-tight">{t.number}</span>
-                    <span className="text-[9px] font-semibold truncate opacity-90">{t.name}</span>
-                    {t.delayMinutes > 0 && (
-                      <span className="ml-auto font-mono text-[9px] font-bold shrink-0">+{t.delayMinutes}m</span>
-                    )}
+                    {/* coach body: glossy roof + colour + window band */}
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background: `linear-gradient(180deg,#ffffff70, ${statusHex(t.status)} 22%, ${statusHex(t.status)} 44%, #0a0f1655 46%, #0a0f1655 60%, ${statusHex(t.status)} 62%, ${statusHex(t.status)}cc)`
+                      }}
+                    />
+                    {/* coach divisions */}
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        backgroundImage:
+                          "repeating-linear-gradient(90deg, transparent 0 16px, rgba(8,12,18,.4) 16px 18px)"
+                      }}
+                    />
+                    {/* loco nose */}
+                    <div
+                      className="absolute top-0 bottom-0 right-0 w-2"
+                      style={{ background: "rgba(8,12,18,.55)" }}
+                    />
+                    <div className="absolute inset-0 flex items-center gap-1.5 px-2">
+                      <span className="font-mono text-[12px] font-extrabold tracking-tight drop-shadow-sm">
+                        {t.number}
+                      </span>
+                      <span className="text-[9px] font-semibold truncate opacity-90">{t.name}</span>
+                      {t.delayMinutes > 0 && (
+                        <span className="ml-auto mr-2 font-mono text-[9px] font-bold shrink-0">
+                          +{t.delayMinutes}m
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <span className="absolute left-8 top-1/2 -translate-y-1/2 text-[9px] text-muted/40 italic z-10">
