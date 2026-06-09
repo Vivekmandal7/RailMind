@@ -16,6 +16,7 @@ import {
   buildCorridorRailLayers,
   buildDynamicMapLayers,
   buildRailLayers,
+  isStationPick,
   isTrainPick
 } from "@/lib/mapLayers";
 import {
@@ -35,6 +36,7 @@ import {
 } from "@/lib/twinBridge";
 import { useStore } from "@/store/useStore";
 import TrainDetailPanel from "@/components/TrainDetailPanel";
+import StationView from "@/components/StationView";
 import TrainSearch from "@/components/TrainSearch";
 import SimClockBar from "@/components/SimClockBar";
 import MapLegend from "@/components/MapLegend";
@@ -159,6 +161,7 @@ export default function IndiaMap() {
   isLiveRef.current = isLive;
 
   const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
+  const [selectedStation, setSelectedStation] = useState<string | null>(null);
   const [hoveredNumber, setHoveredNumber] = useState<string | null>(null);
   const [simSecDisplay, setSimSecDisplay] = useState(STATIC_SIM_SEC);
   const [playing, setPlaying] = useState(true);
@@ -345,6 +348,7 @@ export default function IndiaMap() {
 
   const selectTrainRef = useRef<(number: string) => void>(() => {});
   const deselectTrainRef = useRef<() => void>(() => {});
+  const selectStationRef = useRef<(code: string) => void>(() => {});
 
   const flyToTrain = useCallback((train: TrainSnapshot) => {
     const map = mapRef.current;
@@ -389,8 +393,31 @@ export default function IndiaMap() {
     requestAnimationFrame(() => renderFrame(0));
   }, [renderFrame, selectTrainStore]);
 
+  const selectStation = useCallback(
+    (code: string) => {
+      // Station board and train card are mutually exclusive.
+      setSelectedNumber(null);
+      setDetailSnap(null);
+      selectTrainStore(null);
+      setSelectedStation(code);
+      const map = mapRef.current;
+      const st = net.stationMap[code];
+      if (map && st) {
+        map.flyTo({
+          center: [st.lng, st.lat],
+          zoom: Math.max(map.getZoom(), 11.5),
+          duration: INDIA_FLY_DURATION_MS,
+          essential: true,
+          pitch: is3DRef.current ? 55 : 0
+        });
+      }
+    },
+    [net, selectTrainStore]
+  );
+
   selectTrainRef.current = selectTrain;
   deselectTrainRef.current = deselectTrain;
+  selectStationRef.current = selectStation;
 
   const resetView = useCallback(() => {
     const map = mapRef.current;
@@ -610,12 +637,19 @@ export default function IndiaMap() {
     const overlay = new MapboxOverlay({
       interleaved: true,
       layers: [],
+      // forgiving hit area so small station dots + trains are easy to click
+      pickingRadius: 8,
       onClick: (info: PickingInfo) => {
         if (isTrainPick(info)) {
           selectTrainRef.current(info.object.number);
           return true;
         }
+        if (isStationPick(info)) {
+          selectStationRef.current(info.object.code);
+          return true;
+        }
         deselectTrainRef.current();
+        setSelectedStation(null);
         return false;
       },
       onHover: (info: PickingInfo) => {
@@ -624,7 +658,8 @@ export default function IndiaMap() {
           hoveredRef.current = next;
           setHoveredNumber(next);
         }
-        map.getCanvas().style.cursor = isTrainPick(info) ? "pointer" : "";
+        map.getCanvas().style.cursor =
+          isTrainPick(info) || isStationPick(info) ? "pointer" : "";
       }
     });
 
@@ -764,6 +799,9 @@ export default function IndiaMap() {
           snapshot={detailSnap}
           onClose={deselectTrain}
         />
+      )}
+      {selectedStation && (
+        <StationView code={selectedStation} onClose={() => setSelectedStation(null)} />
       )}
       <SimClockBar
         simSec={clockSimSec}

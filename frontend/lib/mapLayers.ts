@@ -147,9 +147,17 @@ export function buildRailLayers(
 
 /** Draw the ACTUAL corridor track (backend sections) under the live trains —
  *  bright and always visible, only lightly dimmed when a train is selected. */
+export interface CorridorStation {
+  code: string;
+  name: string;
+  lat: number;
+  lng: number;
+  platforms: number;
+}
+
 export function buildCorridorRailLayers(
   sections: { id: string; geometry: LngLat[]; ghat?: boolean; line?: string }[],
-  stations: { lng: number; lat: number }[],
+  stations: CorridorStation[],
   zoom: number,
   dim: boolean
 ): Layer[] {
@@ -185,15 +193,23 @@ export function buildCorridorRailLayers(
       id: "corridor-stations",
       data: stations,
       getPosition: (d) => [d.lng, d.lat],
-      getRadius: zoom >= 9 ? 4 : 3,
+      getRadius: zoom >= 9 ? 4.5 : 3.5,
       radiusUnits: "pixels",
+      radiusMinPixels: 4,
       getFillColor: [206, 214, 226, dim ? 170 : 235],
       getLineColor: [18, 22, 30, 220],
       lineWidthMinPixels: 1,
       stroked: true,
+      pickable: true,
       parameters: { depthTest: false }
     })
   ];
+}
+
+export function isStationPick(
+  info: PickingInfo
+): info is PickingInfo<CorridorStation> & { object: CorridorStation } {
+  return Boolean(info.object && info.layer?.id === "corridor-stations");
 }
 
 function buildSelectedRouteLayer(selected: TrainSnapshot, zoom: number): Layer[] {
