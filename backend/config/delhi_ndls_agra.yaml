@@ -1,0 +1,40 @@
+# RailMind corridor configuration — New Delhi → Agra (Northern Railway).
+# The iconic Taj / Gatimaan corridor: busy, real live-status expresses.
+corridor:
+  id: ndls-agra
+  name: New Delhi - Agra (Northern Railway)
+  zone: NR
+
+data_source:
+  kind: geojson
+  stations: ../data/delhi_stations.geojson
+  sections: ../data/delhi_sections.geojson
+  timetable: ../data/delhi_timetable.json
+
+simulation:
+  tick_hz: 5
+  time_scale: 60.0
+  start_clock: "08:30"     # busy mid-morning
+  loop: true
+
+modules:
+  conflict_detector: rule_based
+  predictor: hybrid
+  optimizer: cp_sat
+  verifier: llm_consensus
+  autonomous: false
+
+kinematics:
+  station_dwell_min_sec: 30
+
+# Live data spine (RapidAPI · same provider as Mumbai). Polls the 10 real
+# expresses; the EMU locals run on schedule (SIM, no public live feed).
+live:
+  kind: rapidapi
+  poll_interval_sec: 120
+  poll_max_trains: 10
+  poll_batch: 10
+  poll_stagger_sec: 0.4
+  fresh_window_sec: 200
+  stale_window_sec: 1200
+  ttl_sec: 3600

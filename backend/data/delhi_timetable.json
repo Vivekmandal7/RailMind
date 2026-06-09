@@ -1,0 +1,669 @@
+{
+  "source": "Indian Railways public timetable subset for the New Delhi–Agra corridor. Times are representative.",
+  "baseDate": "2024-01-01",
+  "trains": [
+    {
+      "number": "12002",
+      "name": "Bhopal Shatabdi",
+      "type": "express",
+      "direction": "UP",
+      "coaches": 16,
+      "capacityPax": 1100,
+      "route": [
+        "NDLS",
+        "NZM",
+        "OKA",
+        "FDB",
+        "BVH",
+        "PWL",
+        "KSV",
+        "CHJ",
+        "MTJ",
+        "RKM",
+        "AGC"
+      ],
+      "schedule": [
+        {
+          "station": "NDLS",
+          "arr": "06:00",
+          "dep": "06:00"
+        },
+        {
+          "station": "AGC",
+          "arr": "07:48",
+          "dep": "07:48"
+        }
+      ]
+    },
+    {
+      "number": "12280",
+      "name": "Taj Express",
+      "type": "express",
+      "direction": "UP",
+      "coaches": 22,
+      "capacityPax": 1500,
+      "route": [
+        "NDLS",
+        "NZM",
+        "OKA",
+        "FDB",
+        "BVH",
+        "PWL",
+        "KSV",
+        "CHJ",
+        "MTJ",
+        "RKM",
+        "AGC"
+      ],
+      "schedule": [
+        {
+          "station": "NDLS",
+          "arr": "06:40",
+          "dep": "06:40"
+        },
+        {
+          "station": "NZM",
+          "arr": "06:46",
+          "dep": "06:48"
+        },
+        {
+          "station": "MTJ",
+          "arr": "08:36",
+          "dep": "08:38"
+        },
+        {
+          "station": "RKM",
+          "arr": "09:13",
+          "dep": "09:15"
+        },
+        {
+          "station": "AGC",
+          "arr": "09:17",
+          "dep": "09:17"
+        }
+      ]
+    },
+    {
+      "number": "12618",
+      "name": "Mangala SF Express",
+      "type": "express",
+      "direction": "UP",
+      "coaches": 22,
+      "capacityPax": 1500,
+      "route": [
+        "NDLS",
+        "NZM",
+        "OKA",
+        "FDB",
+        "BVH",
+        "PWL",
+        "KSV",
+        "CHJ",
+        "MTJ",
+        "RKM",
+        "AGC"
+      ],
+      "schedule": [
+        {
+          "station": "NDLS",
+          "arr": "07:10",
+          "dep": "07:10"
+        },
+        {
+          "station": "NZM",
+          "arr": "07:15",
+          "dep": "07:17"
+        },
+        {
+          "station": "MTJ",
+          "arr": "08:57",
+          "dep": "08:59"
+        },
+        {
+          "station": "AGC",
+          "arr": "09:35",
+          "dep": "09:35"
+        }
+      ]
+    },
+    {
+      "number": "12622",
+      "name": "Tamil Nadu Express",
+      "type": "express",
+      "direction": "UP",
+      "coaches": 24,
+      "capacityPax": 1600,
+      "route": [
+        "NDLS",
+        "NZM",
+        "OKA",
+        "FDB",
+        "BVH",
+        "PWL",
+        "KSV",
+        "CHJ",
+        "MTJ",
+        "RKM",
+        "AGC"
+      ],
+      "schedule": [
+        {
+          "station": "NDLS",
+          "arr": "07:40",
+          "dep": "07:40"
+        },
+        {
+          "station": "NZM",
+          "arr": "07:45",
+          "dep": "07:47"
+        },
+        {
+          "station": "MTJ",
+          "arr": "09:24",
+          "dep": "09:26"
+        },
+        {
+          "station": "AGC",
+          "arr": "10:02",
+          "dep": "10:02"
+        }
+      ]
+    },
+    {
+      "number": "12050",
+      "name": "Gatimaan Express",
+      "type": "express",
+      "direction": "UP",
+      "coaches": 12,
+      "capacityPax": 800,
+      "route": [
+        "NDLS",
+        "NZM",
+        "OKA",
+        "FDB",
+        "BVH",
+        "PWL",
+        "KSV",
+        "CHJ",
+        "MTJ",
+        "RKM",
+        "AGC"
+      ],
+      "schedule": [
+        {
+          "station": "NDLS",
+          "arr": "08:10",
+          "dep": "08:10"
+        },
+        {
+          "station": "AGC",
+          "arr": "09:51",
+          "dep": "09:51"
+        }
+      ]
+    },
+    {
+      "number": "12626",
+      "name": "Kerala Express",
+      "type": "express",
+      "direction": "UP",
+      "coaches": 24,
+      "capacityPax": 1600,
+      "route": [
+        "NDLS",
+        "NZM",
+        "OKA",
+        "FDB",
+        "BVH",
+        "PWL",
+        "KSV",
+        "CHJ",
+        "MTJ",
+        "RKM",
+        "AGC"
+      ],
+      "schedule": [
+        {
+          "station": "NDLS",
+          "arr": "08:40",
+          "dep": "08:40"
+        },
+        {
+          "station": "NZM",
+          "arr": "08:45",
+          "dep": "08:47"
+        },
+        {
+          "station": "MTJ",
+          "arr": "10:27",
+          "dep": "10:29"
+        },
+        {
+          "station": "AGC",
+          "arr": "11:05",
+          "dep": "11:05"
+        }
+      ]
+    },
+    {
+      "number": "12616",
+      "name": "Grand Trunk Express",
+      "type": "express",
+      "direction": "UP",
+      "coaches": 24,
+      "capacityPax": 1600,
+      "route": [
+        "NDLS",
+        "NZM",
+        "OKA",
+        "FDB",
+        "BVH",
+        "PWL",
+        "KSV",
+        "CHJ",
+        "MTJ",
+        "RKM",
+        "AGC"
+      ],
+      "schedule": [
+        {
+          "station": "NDLS",
+          "arr": "09:20",
+          "dep": "09:20"
+        },
+        {
+          "station": "NZM",
+          "arr": "09:25",
+          "dep": "09:27"
+        },
+        {
+          "station": "MTJ",
+          "arr": "11:11",
+          "dep": "11:13"
+        },
+        {
+          "station": "AGC",
+          "arr": "11:51",
+          "dep": "11:51"
+        }
+      ]
+    },
+    {
+      "number": "12724",
+      "name": "Telangana Express",
+      "type": "express",
+      "direction": "UP",
+      "coaches": 22,
+      "capacityPax": 1500,
+      "route": [
+        "NDLS",
+        "NZM",
+        "OKA",
+        "FDB",
+        "BVH",
+        "PWL",
+        "KSV",
+        "CHJ",
+        "MTJ",
+        "RKM",
+        "AGC"
+      ],
+      "schedule": [
+        {
+          "station": "NDLS",
+          "arr": "10:00",
+          "dep": "10:00"
+        },
+        {
+          "station": "NZM",
+          "arr": "10:05",
+          "dep": "10:07"
+        },
+        {
+          "station": "MTJ",
+          "arr": "11:44",
+          "dep": "11:46"
+        },
+        {
+          "station": "AGC",
+          "arr": "12:22",
+          "dep": "12:22"
+        }
+      ]
+    },
+    {
+      "number": "12001",
+      "name": "Bhopal Shatabdi",
+      "type": "express",
+      "direction": "DOWN",
+      "coaches": 16,
+      "capacityPax": 1100,
+      "route": [
+        "AGC",
+        "RKM",
+        "MTJ",
+        "CHJ",
+        "KSV",
+        "PWL",
+        "BVH",
+        "FDB",
+        "OKA",
+        "NZM",
+        "NDLS"
+      ],
+      "schedule": [
+        {
+          "station": "AGC",
+          "arr": "06:30",
+          "dep": "06:30"
+        },
+        {
+          "station": "MTJ",
+          "arr": "06:59",
+          "dep": "07:01"
+        },
+        {
+          "station": "NZM",
+          "arr": "08:14",
+          "dep": "08:16"
+        },
+        {
+          "station": "NDLS",
+          "arr": "08:18",
+          "dep": "08:18"
+        }
+      ]
+    },
+    {
+      "number": "12049",
+      "name": "Gatimaan Express",
+      "type": "express",
+      "direction": "DOWN",
+      "coaches": 12,
+      "capacityPax": 800,
+      "route": [
+        "AGC",
+        "RKM",
+        "MTJ",
+        "CHJ",
+        "KSV",
+        "PWL",
+        "BVH",
+        "FDB",
+        "OKA",
+        "NZM",
+        "NDLS"
+      ],
+      "schedule": [
+        {
+          "station": "AGC",
+          "arr": "09:30",
+          "dep": "09:30"
+        },
+        {
+          "station": "NDLS",
+          "arr": "11:11",
+          "dep": "11:11"
+        }
+      ]
+    },
+    {
+      "number": "64092",
+      "name": "Delhi – Palwal EMU",
+      "type": "local",
+      "direction": "UP",
+      "coaches": 12,
+      "capacityPax": 2000,
+      "route": [
+        "NDLS",
+        "NZM",
+        "OKA",
+        "FDB",
+        "BVH",
+        "PWL"
+      ],
+      "schedule": [
+        {
+          "station": "NDLS",
+          "arr": "06:20",
+          "dep": "06:20"
+        },
+        {
+          "station": "NZM",
+          "arr": "06:29",
+          "dep": "06:30"
+        },
+        {
+          "station": "OKA",
+          "arr": "06:36",
+          "dep": "06:37"
+        },
+        {
+          "station": "FDB",
+          "arr": "06:58",
+          "dep": "06:59"
+        },
+        {
+          "station": "BVH",
+          "arr": "07:05",
+          "dep": "07:06"
+        },
+        {
+          "station": "PWL",
+          "arr": "07:32",
+          "dep": "07:32"
+        }
+      ]
+    },
+    {
+      "number": "64094",
+      "name": "Delhi – Palwal EMU",
+      "type": "local",
+      "direction": "UP",
+      "coaches": 12,
+      "capacityPax": 2000,
+      "route": [
+        "NDLS",
+        "NZM",
+        "OKA",
+        "FDB",
+        "BVH",
+        "PWL"
+      ],
+      "schedule": [
+        {
+          "station": "NDLS",
+          "arr": "07:25",
+          "dep": "07:25"
+        },
+        {
+          "station": "NZM",
+          "arr": "07:34",
+          "dep": "07:35"
+        },
+        {
+          "station": "OKA",
+          "arr": "07:41",
+          "dep": "07:42"
+        },
+        {
+          "station": "FDB",
+          "arr": "08:03",
+          "dep": "08:04"
+        },
+        {
+          "station": "BVH",
+          "arr": "08:10",
+          "dep": "08:11"
+        },
+        {
+          "station": "PWL",
+          "arr": "08:37",
+          "dep": "08:37"
+        }
+      ]
+    },
+    {
+      "number": "64096",
+      "name": "Delhi – Mathura EMU",
+      "type": "local",
+      "direction": "UP",
+      "coaches": 12,
+      "capacityPax": 2000,
+      "route": [
+        "NDLS",
+        "NZM",
+        "OKA",
+        "FDB",
+        "BVH",
+        "PWL",
+        "KSV",
+        "CHJ",
+        "MTJ"
+      ],
+      "schedule": [
+        {
+          "station": "NDLS",
+          "arr": "08:25",
+          "dep": "08:25"
+        },
+        {
+          "station": "NZM",
+          "arr": "08:34",
+          "dep": "08:35"
+        },
+        {
+          "station": "OKA",
+          "arr": "08:41",
+          "dep": "08:42"
+        },
+        {
+          "station": "FDB",
+          "arr": "09:03",
+          "dep": "09:04"
+        },
+        {
+          "station": "BVH",
+          "arr": "09:10",
+          "dep": "09:11"
+        },
+        {
+          "station": "PWL",
+          "arr": "09:37",
+          "dep": "09:38"
+        },
+        {
+          "station": "KSV",
+          "arr": "10:27",
+          "dep": "10:28"
+        },
+        {
+          "station": "CHJ",
+          "arr": "10:42",
+          "dep": "10:43"
+        },
+        {
+          "station": "MTJ",
+          "arr": "11:18",
+          "dep": "11:18"
+        }
+      ]
+    },
+    {
+      "number": "64472",
+      "name": "Delhi – Palwal EMU",
+      "type": "local",
+      "direction": "UP",
+      "coaches": 12,
+      "capacityPax": 2000,
+      "route": [
+        "NDLS",
+        "NZM",
+        "OKA",
+        "FDB",
+        "BVH",
+        "PWL"
+      ],
+      "schedule": [
+        {
+          "station": "NDLS",
+          "arr": "09:30",
+          "dep": "09:30"
+        },
+        {
+          "station": "NZM",
+          "arr": "09:39",
+          "dep": "09:40"
+        },
+        {
+          "station": "OKA",
+          "arr": "09:46",
+          "dep": "09:47"
+        },
+        {
+          "station": "FDB",
+          "arr": "10:08",
+          "dep": "10:09"
+        },
+        {
+          "station": "BVH",
+          "arr": "10:15",
+          "dep": "10:16"
+        },
+        {
+          "station": "PWL",
+          "arr": "10:42",
+          "dep": "10:42"
+        }
+      ]
+    },
+    {
+      "number": "64091",
+      "name": "Palwal – Delhi EMU",
+      "type": "local",
+      "direction": "DOWN",
+      "coaches": 12,
+      "capacityPax": 2000,
+      "route": [
+        "PWL",
+        "BVH",
+        "FDB",
+        "OKA",
+        "NZM",
+        "NDLS"
+      ],
+      "schedule": [
+        {
+          "station": "PWL",
+          "arr": "07:00",
+          "dep": "07:00"
+        },
+        {
+          "station": "BVH",
+          "arr": "07:27",
+          "dep": "07:28"
+        },
+        {
+          "station": "FDB",
+          "arr": "07:34",
+          "dep": "07:35"
+        },
+        {
+          "station": "OKA",
+          "arr": "07:56",
+          "dep": "07:57"
+        },
+        {
+          "station": "NZM",
+          "arr": "08:03",
+          "dep": "08:04"
+        },
+        {
+          "station": "NDLS",
+          "arr": "08:12",
+          "dep": "08:12"
+        }
+      ]
+    }
+  ]
+}

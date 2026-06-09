@@ -1,0 +1,266 @@
+{
+ "type": "FeatureCollection",
+ "name": "New Delhi–Agra Corridor Sections",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "from": "NDLS",
+    "to": "NZM",
+    "line": "double",
+    "capacity": 6
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      77.2197,
+      28.6431
+     ],
+     [
+      77.2355,
+      28.6157
+     ],
+     [
+      77.2512,
+      28.5882
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "from": "NZM",
+    "to": "OKA",
+    "line": "double",
+    "capacity": 6
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      77.2512,
+      28.5882
+     ],
+     [
+      77.2651,
+      28.5631
+     ],
+     [
+      77.279,
+      28.538
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "from": "OKA",
+    "to": "FDB",
+    "line": "double",
+    "capacity": 6
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      77.279,
+      28.538
+     ],
+     [
+      77.2954,
+      28.4606
+     ],
+     [
+      77.3119,
+      28.3832
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "from": "FDB",
+    "to": "BVH",
+    "line": "double",
+    "capacity": 6
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      77.3119,
+      28.3832
+     ],
+     [
+      77.3192,
+      28.3611
+     ],
+     [
+      77.3265,
+      28.339
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "from": "BVH",
+    "to": "PWL",
+    "line": "double",
+    "capacity": 6
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      77.3265,
+      28.339
+     ],
+     [
+      77.3293,
+      28.241
+     ],
+     [
+      77.332,
+      28.143
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "from": "PWL",
+    "to": "KSV",
+    "line": "double",
+    "capacity": 6
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      77.332,
+      28.143
+     ],
+     [
+      77.384,
+      27.9695
+     ],
+     [
+      77.436,
+      27.796
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "from": "KSV",
+    "to": "CHJ",
+    "line": "double",
+    "capacity": 6
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      77.436,
+      27.796
+     ],
+     [
+      77.477,
+      27.757
+     ],
+     [
+      77.518,
+      27.718
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "from": "CHJ",
+    "to": "MTJ",
+    "line": "double",
+    "capacity": 6
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      77.518,
+      27.718
+     ],
+     [
+      77.597,
+      27.606
+     ],
+     [
+      77.676,
+      27.494
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "from": "MTJ",
+    "to": "RKM",
+    "line": "double",
+    "capacity": 6
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      77.676,
+      27.494
+     ],
+     [
+      77.835,
+      27.3495
+     ],
+     [
+      77.994,
+      27.205
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "from": "RKM",
+    "to": "AGC",
+    "line": "double",
+    "capacity": 6
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      77.994,
+      27.205
+     ],
+     [
+      77.9903,
+      27.1809
+     ],
+     [
+      77.9866,
+      27.1568
+     ]
+    ]
+   }
+  }
+ ]
+}

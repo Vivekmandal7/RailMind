@@ -22,7 +22,7 @@
 
     <path d="M308 112 H318 M406 112 H416 M504 112 H514 M602 112 H612 M700 112 H710" stroke="#3AD0DE" stroke-opacity="0.5"/>
 
-    <text x="480" y="152" text-anchor="middle" fill="#99A1AD" font-size="10">8 AI modules · BrainTracker · Incident Timeline · Orchestrator</text>
+    <text x="480" y="152" text-anchor="middle" fill="#99A1AD" font-size="10">8 AI modules ï¿½ BrainTracker ï¿½ Incident Timeline ï¿½ Orchestrator</text>
 
     <!-- Modules grid -->
     <rect x="220" y="164" width="100" height="28" rx="5" fill="#37D99A" fill-opacity="0.12" stroke="#37D99A" stroke-opacity="0.4"/><text x="270" y="182" text-anchor="middle" fill="#37D99A">Conflict</text>
@@ -45,8 +45,8 @@
   <!-- UI -->
   <rect x="200" y="280" width="736" height="112" rx="14" fill="#14171F" stroke="#242A35"/>
   <text x="568" y="306" text-anchor="middle" fill="#3AD0DE" font-size="11" letter-spacing="2">NEXT.JS CONTROL ROOM</text>
-  <text x="568" y="332" text-anchor="middle" fill="#E7EAF0" font-size="11">Live map · Tracker · AI panel · Incident Timeline · Demo Mode · What-if + NL</text>
-  <text x="568" y="354" text-anchor="middle" fill="#99A1AD" font-size="10">deck.gl · MapLibre · Zustand · typed contract.ts Ä Pydantic models.py</text>
+  <text x="568" y="332" text-anchor="middle" fill="#E7EAF0" font-size="11">Live map ï¿½ Tracker ï¿½ AI panel ï¿½ Incident Timeline ï¿½ Demo Mode ï¿½ What-if + NL</text>
+  <text x="568" y="354" text-anchor="middle" fill="#99A1AD" font-size="10">deck.gl ï¿½ MapLibre ï¿½ Zustand ï¿½ typed contract.ts ï¿½ Pydantic models.py</text>
   <text x="568" y="376" text-anchor="middle" fill="#99A1AD" font-size="10">LOCAL fallback sim when backend offline  same UI contract</text>
 
   <!-- Arrows -->
