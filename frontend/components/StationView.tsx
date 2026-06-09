@@ -71,57 +71,77 @@ export default function StationView({ code, onClose }: Props) {
       </div>
 
       {/* 3D platform deck — looking down the platforms from the concourse */}
-      <div
-        className="px-6 pt-6 pb-3"
-        style={{ perspective: "620px", perspectiveOrigin: "50% 8%" }}
-      >
-        <div style={{ transform: "rotateX(52deg)", transformStyle: "preserve-3d" }}>
-          {board.platforms.map((t, i) => (
-            <div
-              key={i}
-              className="relative mb-[15px] rounded-[3px]"
-              style={{
-                height: 22,
-                background: "linear-gradient(180deg,#202838,#0e131b)",
-                border: "1px solid #2c3646",
-                // thick front edge + cast shadow = a solid platform slab
-                boxShadow: "0 7px 0 #070a10, 0 10px 12px rgba(0,0,0,.55)"
-              }}
-            >
-              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[9px] font-mono font-bold text-muted z-10">
-                {i + 1}
-              </span>
-              {/* rail edge marking down the platform */}
-              <span
-                className="absolute left-7 right-2 top-1/2 -translate-y-1/2 h-px"
-                style={{ background: "repeating-linear-gradient(90deg,#3a4654 0 6px,transparent 6px 12px)" }}
-              />
-              {t ? (
-                <div
-                  className="absolute left-7 right-2 rounded-[4px] flex items-center gap-1.5 px-2"
-                  style={{
-                    top: -11,
-                    height: 30,
-                    transform: "translateZ(20px)",
-                    background: `linear-gradient(180deg, ${statusHex(t.status)}, ${statusHex(t.status)}aa)`,
-                    border: `1px solid ${statusHex(t.status)}`,
-                    boxShadow: `0 6px 10px rgba(0,0,0,.6), 0 0 10px ${statusHex(t.status)}66`,
-                    color: "#0a0f16"
-                  }}
-                >
-                  <span className="font-mono text-[12px] font-extrabold">{t.number}</span>
-                  <span className="text-[9px] font-semibold truncate opacity-90">{t.name}</span>
-                  {t.delayMinutes > 0 && (
-                    <span className="ml-auto font-mono text-[9px] font-bold shrink-0">+{t.delayMinutes}m</span>
-                  )}
-                </div>
-              ) : (
-                <span className="absolute left-7 top-1/2 -translate-y-1/2 text-[9px] text-muted/40 italic z-10">
-                  clear
+      <div className="relative px-6 pt-7 pb-4 overflow-hidden">
+        {/* receding floor grid for depth */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ perspective: "440px", perspectiveOrigin: "50% 0%" }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: "-30% -15% -60% -15%",
+              transform: "rotateX(62deg)",
+              opacity: 0.45,
+              backgroundImage:
+                "linear-gradient(#1a2433 1px, transparent 1px), linear-gradient(90deg,#1a2433 1px, transparent 1px)",
+              backgroundSize: "26px 26px",
+              maskImage: "linear-gradient(#000 30%, transparent 92%)",
+              WebkitMaskImage: "linear-gradient(#000 30%, transparent 92%)"
+            }}
+          />
+        </div>
+
+        <div className="relative" style={{ perspective: "520px", perspectiveOrigin: "50% 2%" }}>
+          <div style={{ transform: "rotateX(56deg)", transformStyle: "preserve-3d" }}>
+            {board.platforms.map((t, i) => (
+              <div
+                key={i}
+                className="relative mb-4 rounded-[3px]"
+                style={{
+                  height: 24,
+                  background: "linear-gradient(180deg,#222c3d,#0e131b)",
+                  border: "1px solid #2e3a4b",
+                  // thick front edge + cast shadow = a solid raised platform
+                  boxShadow: "0 8px 0 #06090e, 0 13px 15px rgba(0,0,0,.6)"
+                }}
+              >
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[9px] font-mono font-bold text-cyan/70 z-10">
+                  P{i + 1}
                 </span>
-              )}
-            </div>
-          ))}
+                {/* yellow platform edge line */}
+                <span
+                  className="absolute left-8 right-2 bottom-[3px] h-px"
+                  style={{ background: "repeating-linear-gradient(90deg,#f5c84244 0 8px,transparent 8px 16px)" }}
+                />
+                {t ? (
+                  <div
+                    className="absolute left-8 right-2 rounded-[5px] flex items-center gap-1.5 px-2"
+                    style={{
+                      top: -13,
+                      height: 34,
+                      transform: "translateZ(26px)",
+                      // glossy top highlight + body colour + rounded-coach inset
+                      background: `linear-gradient(180deg,#ffffff66, ${statusHex(t.status)} 26%, ${statusHex(t.status)}cc)`,
+                      border: `1px solid ${statusHex(t.status)}`,
+                      boxShadow: `0 9px 13px rgba(0,0,0,.6), 0 0 15px ${statusHex(t.status)}77, inset 0 -7px 9px ${statusHex(t.status)}99`,
+                      color: "#0a0f16"
+                    }}
+                  >
+                    <span className="font-mono text-[12px] font-extrabold tracking-tight">{t.number}</span>
+                    <span className="text-[9px] font-semibold truncate opacity-90">{t.name}</span>
+                    {t.delayMinutes > 0 && (
+                      <span className="ml-auto font-mono text-[9px] font-bold shrink-0">+{t.delayMinutes}m</span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="absolute left-8 top-1/2 -translate-y-1/2 text-[9px] text-muted/40 italic z-10">
+                    clear
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
