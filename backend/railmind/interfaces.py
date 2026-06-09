@@ -80,6 +80,11 @@ class TrainState:
     eta_next_sec: Optional[int]
     eta_final_sec: int
     est_passengers: int
+    # provenance: how this position is known. Set by the reconciler, never the
+    # twin — the twin only does geometry. See live/reconciler.py.
+    source: str = "sim"               # live | interpolated | predicted | sim
+    confidence: float = 0.4
+    last_report_age_sec: Optional[int] = None
 
 
 @dataclass
@@ -118,6 +123,10 @@ class ResolutionPlan:
     verified: bool
     verify_note: str
     applied: bool = False
+    explanation: str = ""
+    verifier_agree: int = 0
+    verifier_total: int = 0
+    flagged_for_human: bool = False
 
 
 @dataclass

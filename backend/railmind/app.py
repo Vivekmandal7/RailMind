@@ -11,6 +11,10 @@ import os
 import time
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -70,6 +74,12 @@ hub = Hub()
 
 
 async def sim_loop() -> None:
+    """Fast loop: advance the clock + broadcast train positions every tick.
+
+    Stays lightweight so the WebSocket and /health never stall — even while the
+    brain is busy calling CP-SAT and the LLM verifier. (Previously the heavy
+    pipeline ran here and could freeze the loop for seconds when LLM keys were
+    set, making the UI drop to its LOCAL fallback.)"""
     tick_hz = getattr(orch, "tick_hz", 5.0)
     dt = 1.0 / tick_hz
     last = time.perf_counter()
@@ -77,7 +87,7 @@ async def sim_loop() -> None:
         now = time.perf_counter()
         real_dt = now - last
         last = now
-        orch.step(real_dt)
+        orch.advance(real_dt)
         if hub.clients:
             snap = orch.snapshot()
             snap.tick_hz = tick_hz
@@ -85,21 +95,53 @@ async def sim_loop() -> None:
         await asyncio.sleep(dt)
 
 
+async def brain_loop() -> None:
+    """Heavy loop: run detect → optimize → verify → explain OFF the event loop.
+
+    asyncio.to_thread keeps the (sometimes multi-second, blocking) CP-SAT + LLM
+    work from starving the transport. The orchestrator caches plans, so an
+    unchanged conflict won't re-hit the LLMs on every pass."""
+    while True:
+        try:
+            await asyncio.to_thread(orch.run_pipeline)
+        except Exception as exc:  # one bad pass never kills the brain
+            print("[brain]", repr(exc))
+        await asyncio.sleep(1.5)
+
+
 @app.on_event("startup")
 async def _startup() -> None:
     asyncio.create_task(sim_loop())
+    asyncio.create_task(brain_loop())
+    worker = getattr(orch, "ingestion_worker", None)
+    if worker is not None:
+        asyncio.create_task(worker.run())
 
 
 # ----------------------------- REST ---------------------------------------- #
 @app.get("/health")
 def health() -> dict:
+    from . import llm
+    from .forecaster import GBMDelayForecaster
+    fc = GBMDelayForecaster()
+    providers = llm.available_providers()
+    lp = getattr(orch, "live_provider", None)
+    store = getattr(orch, "live_store", None)
     return {
         "status": "ok",
         "corridor": orch.corridor_name,
         "trains": len(orch.net.trains),
         "sim_sec": orch.sim_sec,
         "tick_hz": getattr(orch, "tick_hz", 5.0),
-        "llm_enabled": bool(os.environ.get("OPENAI_API_KEY")),
+        "llm_enabled": len(providers) > 0,
+        "llm_providers": [p.label for p in providers],
+        "delay_model": fc.kind,
+        "optimizer": type(orch.optimizer).__name__,
+        "verifier": type(orch.verifier).__name__,
+        "live_provider": lp.name if lp else None,
+        "live_origin": lp.origin if lp else None,
+        "live_available": bool(lp.available()) if lp else False,
+        "live_updated_sec_ago": store.newest_live_age_sec() if store else None,
     }
 
 

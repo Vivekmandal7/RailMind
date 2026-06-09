@@ -6,12 +6,13 @@ import { useStore } from "@/store/useStore";
 export function useSimLoop() {
   const tick = useStore((s) => s.tick);
   const initLive = useStore((s) => s.initLive);
+  const cleanupLive = useStore((s) => s.cleanupLive);
   const last = useRef<number>(performance.now());
 
   useEffect(() => {
-    // attempt to connect to the live backend; falls back to local sim on failure
     initLive();
-  }, [initLive]);
+    return () => cleanupLive();
+  }, [initLive, cleanupLive]);
 
   useEffect(() => {
     let raf = 0;

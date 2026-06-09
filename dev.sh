@@ -29,8 +29,13 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
+echo "==> Training delay forecaster if missing"
+if [ ! -f "$BACKEND/models/delay_forecaster.joblib" ]; then
+  ( cd "$BACKEND" && PYTHONPATH=. .venv/bin/python -m railmind.train_delay )
+fi
+
 echo "==> Starting backend on http://127.0.0.1:8000"
-( cd "$BACKEND" && exec .venv/bin/uvicorn railmind.app:app --host 127.0.0.1 --port 8000 ) &
+( cd "$BACKEND" && PYTHONPATH=. exec .venv/bin/uvicorn railmind.app:app --host 127.0.0.1 --port 8000 ) &
 BACK_PID=$!
 
 echo "==> Starting frontend on http://localhost:3000"

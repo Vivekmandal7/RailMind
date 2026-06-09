@@ -59,6 +59,10 @@ export interface TrainStateDTO {
   eta_next_sec: number | null;
   eta_final_sec: number;
   est_passengers: number;
+  // provenance — how this position is known (the single design principle)
+  source: "live" | "interpolated" | "predicted" | "sim";
+  confidence: number;
+  last_report_age_sec: number | null;
 }
 
 export interface ConflictDTO {
@@ -87,6 +91,30 @@ export interface RecommendationDTO {
   verified: boolean;
   verify_note: string;
   applied: boolean;
+  explanation?: string;
+  verifier_agree?: number;
+  verifier_total?: number;
+  flagged_for_human?: boolean;
+}
+
+export interface ModuleStatusDTO {
+  key: string;
+  name: string;
+  status: string;
+  last_action: string;
+  latency_ms: number;
+  detail: string;
+}
+
+export interface TimelineEventDTO {
+  id: string;
+  kind: string;
+  title: string;
+  detail: string;
+  severity: string;
+  sim_sec: number;
+  ref_id: string | null;
+  wall_ms: number;
 }
 
 export interface PredictionDTO {
@@ -105,6 +133,17 @@ export interface AlertDTO {
   trains: string[];
 }
 
+export type ProvenanceSource = "live" | "interpolated" | "predicted" | "sim";
+
+export interface LiveStatusDTO {
+  provider: string;
+  origin: "live" | "sim";
+  available: boolean;
+  updated_sec_ago: number | null;
+  live_count: number;
+  source_counts: Partial<Record<ProvenanceSource, number>>;
+}
+
 export interface TwinSnapshotDTO {
   sim_sec: number;
   tick_hz: number;
@@ -116,4 +155,7 @@ export interface TwinSnapshotDTO {
   predictions: PredictionDTO[];
   alerts: AlertDTO[];
   disruptions: string[];
+  engine_modules?: ModuleStatusDTO[];
+  timeline?: TimelineEventDTO[];
+  live?: LiveStatusDTO | null;
 }

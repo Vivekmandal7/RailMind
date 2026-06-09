@@ -1,0 +1,13 @@
+{
+  "name": "railmind-docs-assets",
+  "private": true,
+  "description": "Scripts to regenerate README screenshots and demo GIF",
+  "scripts": {
+    "capture": "node capture-demo.js",
+    "gif": "python3 build-gif.py",
+    "regenerate": "node capture-demo.js && python3 build-gif.py"
+  },
+  "devDependencies": {
+    "playwright": "^1.52.0"
+  }
+}

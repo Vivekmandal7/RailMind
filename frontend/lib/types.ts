@@ -84,6 +84,12 @@ export interface TrainState {
   /** ETA at the next station (seconds from midnight). */
   etaNextSec: number | null;
   estPassengers: number;
+  /** Provenance: how this position is known. Defaults to "sim" in local mode. */
+  source?: "live" | "interpolated" | "predicted" | "sim";
+  /** Confidence 0–1 in the position (high for LIVE, fading for INTERPOLATED). */
+  confidence?: number;
+  /** Wall-clock age (sec) of the underlying live report, or null. */
+  lastReportAgeSec?: number | null;
 }
 
 export type ConflictType =
@@ -128,6 +134,30 @@ export interface ResolutionPlan {
   passengersProtected: number;
   verified: boolean;
   verifyNote: string;
+  explanation?: string;
+  verifierAgree?: number;
+  verifierTotal?: number;
+  flaggedForHuman?: boolean;
+}
+
+export interface EngineModule {
+  key: string;
+  name: string;
+  status: string;
+  lastAction: string;
+  latencyMs: number;
+  detail: string;
+}
+
+export interface TimelineEvent {
+  id: string;
+  kind: string;
+  title: string;
+  detail: string;
+  severity: string;
+  simSec: number;
+  refId?: string;
+  wallMs: number;
 }
 
 export interface AlertItem {

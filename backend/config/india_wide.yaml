@@ -13,15 +13,32 @@ data_source:
 simulation:
   tick_hz: 5
   time_scale: 60.0
-  start_clock: "09:20"
+  start_clock: "11:00"
   loop: true
 
 modules:
   conflict_detector: rule_based
-  predictor: cascade
-  optimizer: greedy
-  verifier: rule_based
+  predictor: hybrid
+  optimizer: cp_sat
+  verifier: llm_consensus
   autonomous: false
 
 kinematics:
   station_dwell_min_sec: 30
+
+# Live data spine. kind: rapidapi uses a real NTES-backed feed when
+# RAILMIND_RAPIDAPI_KEY is set, otherwise falls back to schedule-driven replay
+# (every train honestly tagged SIM). Swap `kind` to add a new provider.
+live:
+  kind: rapidapi            # rapidapi | replay
+  # 93-train national network on a 50-calls/month free tier: poll only the first
+  # 10 (real long-distance expresses) so the map shows genuine LIVE trains at
+  # national scale; the other 80+ stay honestly tagged SIM. Bump poll_max_trains
+  # (or upgrade the RapidAPI plan) for more LIVE coverage.
+  poll_max_trains: 10       # cap polled trains to protect quota (0 = all)
+  poll_interval_sec: 1800   # 30 min between cycles
+  poll_batch: 10            # cover the capped set in one cycle
+  poll_stagger_sec: 0.5
+  fresh_window_sec: 180     # < 3 min since ping -> LIVE
+  stale_window_sec: 1800    # 3-30 min -> INTERPOLATED, beyond -> PREDICTED
+  ttl_sec: 3600             # keep a ping usable for an hour

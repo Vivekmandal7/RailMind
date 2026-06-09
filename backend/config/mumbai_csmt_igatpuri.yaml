@@ -20,11 +20,28 @@ simulation:
 # Feature flags: toggle half-built modules without breaking the running app.
 modules:
   conflict_detector: rule_based
-  predictor: cascade
-  optimizer: greedy
-  verifier: rule_based
+  predictor: hybrid
+  optimizer: cp_sat
+  verifier: llm_consensus
   autonomous: false        # auto-apply critical verified plans
 
 kinematics:
   # ease-in/ease-out (smootherstep) acceleration model between stops
   station_dwell_min_sec: 30
+
+# Live data spine. kind: rapidapi uses a real NTES-backed feed when
+# RAILMIND_RAPIDAPI_KEY is set, else falls back to schedule-driven replay
+# (every train honestly tagged SIM).
+live:
+  kind: rapidapi            # rapidapi | replay
+  # PRO plan (1000 calls/day): refresh every 2 min so the corridor stays LIVE.
+  # 8 trains / 120s ≈ 240 calls/hr → ~4 hrs of continuous LIVE per day; past that
+  # it degrades honestly to INTERPOLATED off the last ping (never blank).
+  poll_interval_sec: 120    # 2 min between cycles
+  poll_max_trains: 5        # only the 5 real expresses have NTES status; the
+                            # suburban locals run on schedule (SIM) — don't waste calls
+  poll_batch: 5
+  poll_stagger_sec: 0.4
+  fresh_window_sec: 200     # < ~3 min since ping -> LIVE (covers the 2-min gap)
+  stale_window_sec: 1200    # up to 20 min -> INTERPOLATED, beyond -> PREDICTED
+  ttl_sec: 3600             # keep a ping usable for an hour

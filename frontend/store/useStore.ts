@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { loadNetwork, simWindow } from "@/lib/dataLoader";
+import { loadIndiaNetwork, networkFromDTO, simWindow } from "@/lib/dataLoader";
 import {
   computeAllStates,
   detectConflicts,
@@ -8,19 +8,38 @@ import {
 import { proposeResolution } from "@/lib/optimizer";
 import { parseCommand, intentEcho, NLIntent } from "@/lib/nlCommand";
 import { LiveClient } from "@/lib/liveClient";
-import type { TwinSnapshotDTO, NetworkDTO } from "@/lib/contract";
+import type { TwinSnapshotDTO, NetworkDTO, LiveStatusDTO } from "@/lib/contract";
 import type {
   AlertItem,
   Conflict,
   Disruption,
+  EngineModule,
   LngLat,
   NetworkData,
   ResolutionPlan,
+  TimelineEvent,
   TrainState
 } from "@/lib/types";
+import { localTimeline } from "@/lib/timelineLocal";
+import { pickBlockSection, labelSection } from "@/lib/disruptionTarget";
 
-const net: NetworkData = loadNetwork();
+const net: NetworkData = loadIndiaNetwork();
 const win = simWindow(net);
+
+function applyLocalIndiaNet(): Partial<State> {
+  const indiaNet = loadIndiaNetwork();
+  const { geom, meta } = buildLocalGeom(indiaNet);
+  const indiaWin = simWindow(indiaNet);
+  return {
+    net: indiaNet,
+    corridorName: "India-wide Rail Network (local)",
+    trainGeom: geom,
+    trainMeta: meta,
+    windowStart: indiaWin.start,
+    windowEnd: indiaWin.end,
+    simSec: Math.max(indiaWin.start, 11 * 3600)
+  };
+}
 
 export interface TrainGeom {
   polyline: LngLat[];
@@ -92,7 +111,10 @@ function mapSnapshot(
       currentSection: t.current_section,
       etaNextSec: t.eta_next_sec,
       etaFinalSec: t.eta_final_sec,
-      estPassengers: t.est_passengers
+      estPassengers: t.est_passengers,
+      source: t.source ?? "sim",
+      confidence: t.confidence,
+      lastReportAgeSec: t.last_report_age_sec
     };
   });
 
@@ -125,7 +147,11 @@ function mapSnapshot(
     connectionsProtected: p.connections_protected,
     passengersProtected: p.passengers_protected,
     verified: p.verified,
-    verifyNote: p.verify_note
+    verifyNote: p.verify_note,
+    explanation: p.explanation,
+    verifierAgree: p.verifier_agree,
+    verifierTotal: p.verifier_total,
+    flaggedForHuman: p.flagged_for_human
   }));
 
   const alerts: AlertItem[] = snap.alerts.map((a) => ({
@@ -182,6 +208,14 @@ interface State {
   conflicts: Conflict[];
   plans: ResolutionPlan[];
   alerts: AlertItem[];
+  predictions: { train: string; predictedDelayMin: number; cause: string }[];
+  engineModules: EngineModule[];
+  timeline: TimelineEvent[];
+
+  // demo / onboarding
+  demoActive: boolean;
+  demoCaption: string | null;
+  demoEngineOverride: EngineModule[] | null;
 
   // live transport
   mode: "live" | "local";
@@ -191,6 +225,8 @@ interface State {
   trainGeom: Record<string, TrainGeom>;
   trainMeta: Record<string, TrainMeta>;
   lastSnapshotAt: number; // performance.now() of the last live frame
+  /** Data-spine health: which feed drives the twin + how fresh it is. */
+  live: LiveStatusDTO | null;
 
   // ui
   selectedTrain: string | null;
@@ -198,6 +234,7 @@ interface State {
   cascade: CascadeResult | null;
   passengerLayer: boolean;
   nlLog: NLLog[];
+  injectNotice: string | null;
 
   fitRoute: string[] | null;
 
@@ -226,7 +263,29 @@ interface State {
 
   setFitRoute: (codes: string[] | null) => void;
 
+  mapResetSeq: number;
+  requestMapReset: () => void;
+
+  focusConflictId: string | null;
+  focusConflict: (id: string | null) => void;
+  syncLocalSim: (simSec: number) => void;
+
+  // overlay KPI feed for India map local sim (Phase 5)
+  overlayStates: TrainState[];
+  overlaySimSec: number;
+  setOverlayKpi: (states: TrainState[], simSec: number) => void;
+
   runNL: (cmd: string) => void;
+  cleanupLive: () => void;
+
+  jumpToTimelineEvent: (ev: TimelineEvent) => void;
+  setDemoState: (patch: {
+    demoActive?: boolean;
+    demoCaption?: string | null;
+    demoEngineOverride?: EngineModule[] | null;
+  }) => void;
+  focusCorridor: () => void;
+  focusBlockCorridor: () => void;
 }
 
 function params(s: State): EngineParams {
@@ -239,11 +298,40 @@ function params(s: State): EngineParams {
   };
 }
 
+function mapTimeline(dto: TwinSnapshotDTO["timeline"]): TimelineEvent[] {
+  return (dto ?? []).map((e) => ({
+    id: e.id,
+    kind: e.kind,
+    title: e.title,
+    detail: e.detail,
+    severity: e.severity,
+    simSec: e.sim_sec,
+    refId: e.ref_id ?? undefined,
+    wallMs: e.wall_ms
+  }));
+}
+
+function syncLocalTimeline(s: State): TimelineEvent[] {
+  return localTimeline.sync({
+    simSec: s.simSec,
+    conflicts: s.conflicts,
+    plans: s.plans,
+    disruptions: s.disruptions,
+    resolvedConflictIds: s.resolvedConflictIds
+  });
+}
+
+function withLocalTimeline(s: State, patch: Partial<State>): Partial<State> {
+  const merged = { ...s, ...patch } as State;
+  if (merged.mode === "live") return patch;
+  return { ...patch, timeline: syncLocalTimeline(merged) };
+}
+
 function recompute(s: State): Partial<State> {
   const p = params(s);
-  const states = computeAllStates(net, p);
-  const conflicts = detectConflicts(net, p);
-  const plans = conflicts.map((c) => proposeResolution(net, c, states));
+  const states = computeAllStates(s.net, p);
+  const conflicts = detectConflicts(s.net, p);
+  const plans = conflicts.map((c) => proposeResolution(s.net, c, states));
   const alerts = buildAlerts(conflicts, states);
   return { states, conflicts, plans, alerts };
 }
@@ -288,7 +376,7 @@ function sev(s: string): number {
 /** Downstream chain reaction for a delayed train (cascade view). */
 function computeCascade(s: State, trainNumber: string): CascadeResult {
   const src = s.states.find((t) => t.number === trainNumber);
-  const train = net.trains.find((t) => t.number === trainNumber);
+  const train = s.net.trains.find((t) => t.number === trainNumber);
   if (!src || !train) return { source: trainNumber, trains: [], stations: [], sections: [] };
 
   // sections the source will still traverse
@@ -303,7 +391,7 @@ function computeCascade(s: State, trainNumber: string): CascadeResult {
   const affected = new Set<string>();
   for (const other of s.states) {
     if (other.number === trainNumber || !other.active) continue;
-    const ot = net.trains.find((t) => t.number === other.number)!;
+    const ot = s.net.trains.find((t) => t.number === other.number)!;
     // does another train share any upcoming section soon after the source?
     let shares = false;
     for (let i = 0; i < ot.route.length - 1; i++) {
@@ -335,7 +423,7 @@ export const useStore = create<State>((set, get) => ({
   windowStart: win.start,
   windowEnd: win.end,
 
-  simSec: 9 * 3600 + 1200, // 09:20 — corridor busy, ghat conflicts in look-ahead
+  simSec: Math.max(win.start, 11 * 3600), // 11:00 IST — national network busy
   playing: true,
   speed: 60,
 
@@ -345,6 +433,8 @@ export const useStore = create<State>((set, get) => ({
   speedFactor: 1,
   disruptions: [],
 
+  injectNotice: null as string | null,
+
   autonomous: false,
   appliedPlans: [],
   resolvedConflictIds: new Set<string>(),
@@ -353,11 +443,19 @@ export const useStore = create<State>((set, get) => ({
   conflicts: [],
   plans: [],
   alerts: [],
+  predictions: [],
+  engineModules: [],
+  timeline: [],
+
+  demoActive: false,
+  demoCaption: null,
+  demoEngineOverride: null,
 
   mode: "local",
   connected: false,
-  corridorName: "Mumbai CSMT \u2013 Igatpuri",
+  corridorName: "India-wide Rail Network",
   tickHz: 60,
+  live: null,
   trainGeom: LOCAL.geom,
   trainMeta: LOCAL.meta,
   lastSnapshotAt: 0,
@@ -369,27 +467,61 @@ export const useStore = create<State>((set, get) => ({
   nlLog: [],
   fitRoute: null,
 
+  mapResetSeq: 0,
+
+  focusConflictId: null,
+
+  overlayStates: [],
+  overlaySimSec: 11 * 3600,
+
   initLive: async () => {
     const ok = await liveClient.health();
     if (!ok) {
-      // backend unreachable -> stay in local in-browser simulation mode
-      set({ mode: "local", connected: false });
+      const indiaPatch = applyLocalIndiaNet();
+      set({
+        mode: "local",
+        connected: false,
+        ...indiaPatch,
+        ...withLocalTimeline(
+          { ...get(), ...indiaPatch } as State,
+          recompute({ ...get(), ...indiaPatch } as State)
+        )
+      });
       return;
     }
     try {
       const dto = await liveClient.fetchNetwork();
+      const liveNet = networkFromDTO(dto);
       const { geom, meta } = buildLiveGeom(dto);
+      const win = simWindow(liveNet);
       set({
         mode: "live",
+        connected: false,
+        net: liveNet,
         corridorName: dto.corridor_name,
         trainGeom: geom,
-        trainMeta: meta
+        trainMeta: meta,
+        windowStart: win.start,
+        windowEnd: win.end,
+        selectedTrain: null,
+        trackTrain: null,
+        cascade: null,
+        fitRoute: null
       });
       liveClient.onStatus = (c) => set({ connected: c });
       liveClient.onSnapshot = (snap) => get().ingestSnapshot(snap);
       liveClient.connect();
     } catch {
-      set({ mode: "local", connected: false });
+      const indiaPatch = applyLocalIndiaNet();
+      set({
+        mode: "local",
+        connected: false,
+        ...indiaPatch,
+        ...withLocalTimeline(
+          { ...get(), ...indiaPatch } as State,
+          recompute({ ...get(), ...indiaPatch } as State)
+        )
+      });
     }
   },
 
@@ -411,6 +543,21 @@ export const useStore = create<State>((set, get) => ({
         label,
         atSec: 0
       })),
+      predictions: snap.predictions.map((p) => ({
+        train: p.train,
+        predictedDelayMin: p.predicted_delay_min,
+        cause: p.cause
+      })),
+      engineModules: (snap.engine_modules ?? []).map((m) => ({
+        key: m.key,
+        name: m.name,
+        status: m.status,
+        lastAction: m.last_action,
+        latencyMs: m.latency_ms,
+        detail: m.detail
+      })),
+      timeline: mapTimeline(snap.timeline),
+      live: snap.live ?? null,
       lastSnapshotAt:
         typeof performance !== "undefined" ? performance.now() : Date.now()
     });
@@ -439,7 +586,7 @@ export const useStore = create<State>((set, get) => ({
         }
       }
     }
-    set(patch);
+    set(withLocalTimeline(s, patch));
   },
 
   setPlaying: (p) => {
@@ -458,10 +605,11 @@ export const useStore = create<State>((set, get) => ({
       set({ simSec: clamped, playing: false });
       return;
     }
-    set({ simSec: clamped, playing: false, ...recompute({ ...s, simSec: clamped }) });
+    set(withLocalTimeline(s, { simSec: clamped, playing: false, ...recompute({ ...s, simSec: clamped }) }));
   },
   resetSim: () => {
     const s = get();
+    localTimeline.clear(s.windowStart);
     const base = {
       ...s,
       simSec: s.windowStart,
@@ -474,7 +622,7 @@ export const useStore = create<State>((set, get) => ({
       resolvedConflictIds: new Set<string>(),
       cascade: null
     };
-    set({ ...base, ...recompute(base) });
+    set(withLocalTimeline(s, { ...base, ...recompute(base) }));
   },
 
   injectBreakdown: (train) => {
@@ -500,33 +648,53 @@ export const useStore = create<State>((set, get) => ({
         atSec: s.simSec
       }
     ];
+    localTimeline.push("inject", "Breakdown injected", `Train ${pick} stalled`, {
+      severity: "critical",
+      simSec: s.simSec
+    });
     const base = { ...s, frozen, disruptions };
-    set({ frozen, disruptions, ...recompute(base) });
+    set(withLocalTimeline(s, { frozen, disruptions, ...recompute(base) }));
   },
 
   injectBlock: (sectionId) => {
-    if (get().mode === "live") {
-      liveClient.send({ action: "inject", kind: "block", section: sectionId ?? "NGP-BPQ" });
+    const s = get();
+    const pick = pickBlockSection(s.net, s.states, sectionId);
+    if (!pick) return;
+    const sec = pick.sectionId;
+
+    if (s.mode === "live") {
+      liveClient.send({ action: "inject", kind: "block", section: sec });
+      set({ injectNotice: pick.notice ?? null });
       return;
     }
-    const s = get();
-    // default: block a constrained trunk section
-    const sec = sectionId ?? "NGP-BPQ";
+
     const blocked = new Set(s.blocked);
     blocked.add(sec);
-    const secObj = net.sectionMap[sec];
+    const label = labelSection(s.net, sec);
     const disruptions = [
       ...s.disruptions,
       {
         id: `blk-${sec}-${Date.now()}`,
         kind: "block" as const,
-        label: `Block: ${secObj ? `${secObj.from}\u2013${secObj.to}` : sec}`,
+        label: `Block: ${label}`,
         section: sec,
         atSec: s.simSec
       }
     ];
+    localTimeline.push("inject", "Section blocked", label, {
+      severity: "critical",
+      simSec: s.simSec,
+      refId: sec
+    });
     const base = { ...s, blocked, disruptions };
-    set({ blocked, disruptions, ...recompute(base) });
+    set(
+      withLocalTimeline(s, {
+        blocked,
+        disruptions,
+        injectNotice: pick.notice ?? null,
+        ...recompute(base)
+      })
+    );
   },
 
   injectFog: () => {
@@ -546,17 +714,22 @@ export const useStore = create<State>((set, get) => ({
         atSec: s.simSec
       }
     ];
+    localTimeline.push("inject", "Fog restriction", "Network speed 60%", {
+      severity: "warning",
+      simSec: s.simSec
+    });
     const base = { ...s, speedFactor, disruptions };
-    set({ speedFactor, disruptions, ...recompute(base) });
+    set(withLocalTimeline(s, { speedFactor, disruptions, ...recompute(base) }));
   },
 
   clearDisruptions: () => {
     if (get().mode === "live") {
       liveClient.send({ action: "inject", kind: "clear" });
-      set({ cascade: null });
+      set({ cascade: null, injectNotice: null });
       return;
     }
     const s = get();
+    const timeline = localTimeline.clear(s.simSec);
     const base = {
       ...s,
       delaysSec: {},
@@ -564,17 +737,25 @@ export const useStore = create<State>((set, get) => ({
       blocked: new Set<string>(),
       speedFactor: 1,
       disruptions: [],
-      cascade: null
-    };
-    set({
-      delaysSec: {},
-      frozen: {},
-      blocked: new Set<string>(),
-      speedFactor: 1,
-      disruptions: [],
       cascade: null,
-      ...recompute(base)
-    });
+      resolvedConflictIds: new Set<string>(),
+      appliedPlans: []
+    };
+    set(
+      withLocalTimeline(s, {
+        delaysSec: {},
+        frozen: {},
+        blocked: new Set<string>(),
+        speedFactor: 1,
+        disruptions: [],
+        cascade: null,
+        resolvedConflictIds: new Set<string>(),
+        appliedPlans: [],
+        timeline,
+        injectNotice: null,
+        ...recompute(base)
+      })
+    );
   },
 
   applyPlan: (plan) => {
@@ -591,7 +772,7 @@ export const useStore = create<State>((set, get) => ({
   },
 
   selectTrain: (n) => set({ selectedTrain: n }),
-  setTrack: (n) => set({ trackTrain: n, selectedTrain: n ?? get().selectedTrain }),
+  setTrack: (n) => set({ trackTrain: n, selectedTrain: n }),
   showCascade: (n) => {
     const s = get();
     set({ cascade: computeCascade(s, n), selectedTrain: n });
@@ -600,11 +781,38 @@ export const useStore = create<State>((set, get) => ({
   togglePassengerLayer: () => set({ passengerLayer: !get().passengerLayer }),
   setFitRoute: (codes) => set({ fitRoute: codes }),
 
+  requestMapReset: () => set({ mapResetSeq: get().mapResetSeq + 1 }),
+
+  focusConflict: (id) => {
+    const s = get();
+    if (!id) {
+      set({ focusConflictId: null });
+      return;
+    }
+    const c = s.conflicts.find((x) => x.id === id);
+    if (!c) return;
+    set({ focusConflictId: id });
+    get().scrub(Math.max(s.windowStart, c.atSec - 90));
+    if (c.trains[0]) get().setTrack(c.trains[0]);
+  },
+
+  syncLocalSim: (simSec) => {
+    const s = get();
+    if (s.mode === "live") return;
+    const clamped = Math.max(s.windowStart, Math.min(s.windowEnd, simSec));
+    set(
+      withLocalTimeline(s, {
+        simSec: clamped,
+        ...recompute({ ...s, simSec: clamped })
+      })
+    );
+  },
+
   runNL: (cmd) => {
     const s = get();
+    const currentNet = s.net;
     if (s.mode === "live") {
-      // backend simulates the what-if AND returns the impact explanation
-      const echo = intentEcho(parseCommand(cmd, net), net);
+      const echo = intentEcho(parseCommand(cmd, currentNet), currentNet);
       const pending: NLLog = { id: Date.now(), cmd, echo, explanation: "Simulating\u2026" };
       set({ nlLog: [pending, ...s.nlLog].slice(0, 8) });
       liveClient.whatif(cmd).then((res) => {
@@ -617,15 +825,68 @@ export const useStore = create<State>((set, get) => ({
       });
       return;
     }
-    const intent = parseCommand(cmd, net);
-    const echo = intentEcho(intent, net);
+    const intent = parseCommand(cmd, currentNet);
+    const echo = intentEcho(intent, currentNet);
     applyIntent(set, get, intent);
     const after = get();
     const explanation = explainImpact(intent, s, after);
     const log: NLLog = { id: Date.now(), cmd, echo, explanation };
     set({ nlLog: [log, ...after.nlLog].slice(0, 8) });
+  },
+
+  cleanupLive: () => liveClient.disconnect(),
+
+  setOverlayKpi: (states, simSec) => set({ overlayStates: states, overlaySimSec: simSec }),
+
+  jumpToTimelineEvent: (ev) => {
+    const s = get();
+    const refId = ev.refId;
+    get().scrub(ev.simSec);
+    const attach = () => {
+      const st = get();
+      if (refId) {
+        const conflict = st.conflicts.find((c) => c.id === refId);
+        if (conflict?.trains[0]) {
+          get().setTrack(conflict.trains[0]);
+          return;
+        }
+        const train = st.states.find((t) => t.number === refId);
+        if (train) get().setTrack(refId);
+      }
+    };
+    if (s.mode === "live") setTimeout(attach, 400);
+    else attach();
+  },
+
+  setDemoState: (patch) => set(patch),
+
+  focusCorridor: () => {
+    const s = get();
+    const flagship =
+      s.net.trains.find((t) => t.number === "12951") ??
+      s.net.trains.find((t) => t.route.includes("CSMT") && t.route.includes("NDLS")) ??
+      s.net.trains.find((t) => t.type === "express");
+    const route =
+      flagship?.route ??
+      s.net.trains[0]?.route ??
+      s.net.stations.slice(0, 2).map((st) => st.code);
+    if (route?.length) set({ fitRoute: route, trackTrain: null, selectedTrain: null });
+  },
+
+  focusBlockCorridor: () => {
+    const s = get();
+    const pick = pickBlockSection(s.net, s.states);
+    if (!pick) {
+      get().focusCorridor();
+      return;
+    }
+    const sec = s.net.sectionMap[pick.sectionId];
+    const route = sec ? [sec.from, sec.to] : pick.sectionId.split("-");
+    set({ fitRoute: route, trackTrain: null, selectedTrain: null });
   }
 }));
+
+export { liveClient };
 
 function applyPlanInternal(
   set: (p: Partial<State>) => void,
@@ -634,6 +895,17 @@ function applyPlanInternal(
   autonomous: boolean
 ) {
   const s = get();
+  if (plan.flaggedForHuman) {
+    if (s.mode !== "live") {
+      localTimeline.push("blocked", "Apply blocked", "Plan flagged for human review", {
+        severity: "warning",
+        simSec: s.simSec,
+        refId: plan.conflictId
+      });
+      set(withLocalTimeline(s, { timeline: localTimeline.snapshot() }));
+    }
+    return;
+  }
   const delaysSec = { ...s.delaysSec };
   for (const a of plan.actions) {
     if (a.holdSec && a.kind !== "speed") {
@@ -643,8 +915,15 @@ function applyPlanInternal(
   const resolvedConflictIds = new Set(s.resolvedConflictIds);
   resolvedConflictIds.add(plan.conflictId);
   const appliedPlans = [{ ...plan }, ...s.appliedPlans].slice(0, 12);
+  if (s.mode !== "live") {
+    localTimeline.push("apply", "Plan applied", plan.summary.slice(0, 140), {
+      severity: "safe",
+      simSec: s.simSec,
+      refId: plan.conflictId
+    });
+  }
   const base = { ...s, delaysSec, resolvedConflictIds, appliedPlans };
-  set({ delaysSec, resolvedConflictIds, appliedPlans, ...recompute(base) });
+  set(withLocalTimeline(s, { delaysSec, resolvedConflictIds, appliedPlans, ...recompute(base) }));
 }
 
 function applyIntent(
@@ -690,10 +969,10 @@ function applyIntent(
 }
 
 // seed derived state for the first render before the loop starts ticking
-useStore.setState((s) => recompute(s as State));
+useStore.setState((s) => withLocalTimeline(s as State, recompute(s as State)));
 
 function explainImpact(intent: NLIntent, before: State, after: State): string {
-  if (intent.type === "unknown") return intentEcho(intent, net);
+  if (intent.type === "unknown") return intentEcho(intent, after.net);
   const newCrit = after.conflicts.filter((c) => c.severity === "critical").length;
   const pax = after.conflicts.reduce((s, c) => s + c.passengersAffected, 0);
   const topPlan = after.plans[0];

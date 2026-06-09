@@ -89,6 +89,10 @@ class TrainStateModel(BaseModel):
     eta_next_sec: Optional[int] = None
     eta_final_sec: int
     est_passengers: int
+    # provenance — the single design principle: every train says how it is known.
+    source: str = "sim"               # live | interpolated | predicted | sim
+    confidence: float = 0.4
+    last_report_age_sec: Optional[int] = None
 
 
 class Severity(str, Enum):
@@ -130,6 +134,19 @@ class RecommendationModel(BaseModel):
     verified: bool
     verify_note: str
     applied: bool = False
+    explanation: str = ""
+    verifier_agree: int = 0
+    verifier_total: int = 0
+    flagged_for_human: bool = False
+
+
+class ModuleStatusModel(BaseModel):
+    key: str
+    name: str
+    status: str  # idle | running | ok | flag | error | off
+    last_action: str
+    latency_ms: int
+    detail: str
 
 
 class PredictionModel(BaseModel):
@@ -149,6 +166,31 @@ class AlertModel(BaseModel):
     trains: list[str]
 
 
+class TimelineEventModel(BaseModel):
+    id: str
+    kind: str
+    title: str
+    detail: str
+    severity: str
+    sim_sec: float
+    ref_id: str | None = None
+    wall_ms: int = 0
+
+
+class LiveStatusModel(BaseModel):
+    """Data-spine health: what feed is driving the twin and how fresh it is.
+
+    Powers the top-bar 'go live' clock ("NTES • updated 2m ago") and the
+    provenance legend counts.
+    """
+    provider: str               # replay | rapidapi | ...
+    origin: str                 # live | sim
+    available: bool             # is a real feed actually flowing?
+    updated_sec_ago: Optional[float] = None    # wall-clock age of freshest LIVE report
+    live_count: int = 0                          # trains anchored to a real ping
+    source_counts: dict[str, int] = {}           # {live, interpolated, predicted, sim}
+
+
 class TwinSnapshot(BaseModel):
     """One broadcast frame. The heartbeat of the system."""
     sim_sec: float
@@ -161,6 +203,9 @@ class TwinSnapshot(BaseModel):
     predictions: list[PredictionModel]
     alerts: list[AlertModel]
     disruptions: list[str]
+    engine_modules: list[ModuleStatusModel] = []
+    timeline: list[TimelineEventModel] = []
+    live: Optional[LiveStatusModel] = None
 
 
 # --------------------------------------------------------------------------- #

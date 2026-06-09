@@ -13,9 +13,17 @@ function Stat({ label, value, tone }: { label: string; value: string; tone: stri
 
 function PlanCard({ plan, conflict }: { plan: ResolutionPlan; conflict?: Conflict }) {
   const applyPlan = useStore((s) => s.applyPlan);
-  const scrub = useStore((s) => s.scrub);
-  const setTrack = useStore((s) => s.setTrack);
+  const focusConflict = useStore((s) => s.focusConflict);
   const applied = useStore((s) => s.appliedPlans.some((p) => p.conflictId === plan.conflictId));
+
+  const verifyBadge =
+    plan.verifierTotal && plan.verifierTotal > 0
+      ? `VERIFIED ✓ ${plan.verifierAgree}/${plan.verifierTotal}`
+      : plan.verified
+      ? "VERIFIED"
+      : plan.flaggedForHuman
+      ? "FLAGGED"
+      : null;
 
   return (
     <div className="rounded-xl border border-border bg-panel2 p-3 mb-2.5">
@@ -32,14 +40,33 @@ function PlanCard({ plan, conflict }: { plan: ResolutionPlan; conflict?: Conflic
           </span>
           <span className="text-[11px] text-muted font-mono">{conflict?.locationLabel}</span>
         </div>
-        {plan.verified && (
-          <span className="tag text-safe border-safe/50 bg-safe/10 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-safe" /> VERIFIED
+        {verifyBadge && (
+          <span
+            className={`tag flex items-center gap-1 ${
+              plan.flaggedForHuman
+                ? "text-amber border-amber/50 bg-amber/10"
+                : plan.verified
+                ? "text-safe border-safe/50 bg-safe/10"
+                : "text-muted border-border"
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                plan.flaggedForHuman ? "bg-amber" : plan.verified ? "bg-safe" : "bg-muted"
+              }`}
+            />
+            {verifyBadge}
           </span>
         )}
       </div>
 
       <p className="text-xs text-text/90 leading-snug mb-2">{plan.summary}</p>
+
+      {plan.explanation && (
+        <p className="text-[11px] text-cyan/90 leading-snug mb-2 border-l-2 border-cyan/40 pl-2">
+          {plan.explanation}
+        </p>
+      )}
 
       <div className="space-y-1 mb-2.5">
         {plan.actions.map((a, i) => (
@@ -61,20 +88,21 @@ function PlanCard({ plan, conflict }: { plan: ResolutionPlan; conflict?: Conflic
 
       <div className="flex gap-2">
         <button
-          disabled={applied}
+          disabled={applied || plan.flaggedForHuman}
           onClick={() => applyPlan(plan)}
           className={`flex-1 text-xs font-semibold py-1.5 rounded-lg transition-colors ${
             applied
               ? "bg-safe/15 text-safe border border-safe/40 cursor-default"
+              : plan.flaggedForHuman
+              ? "bg-muted/20 text-muted border border-border cursor-not-allowed"
               : "bg-amber text-base hover:brightness-110"
           }`}
         >
-          {applied ? "Applied" : "Apply Plan"}
+          {applied ? "Applied" : plan.flaggedForHuman ? "Review Required" : "Apply Plan"}
         </button>
         <button
           onClick={() => {
-            if (conflict) scrub(conflict.atSec - 90);
-            if (conflict?.trains[0]) setTrack(conflict.trains[0]);
+            if (conflict) focusConflict(conflict.id);
           }}
           className="flex-1 text-xs font-semibold py-1.5 rounded-lg border border-cyan/50 text-cyan hover:bg-cyan/10 transition-colors"
         >
@@ -91,10 +119,11 @@ export default function AiPanel() {
   const autonomous = useStore((s) => s.autonomous);
   const setAutonomous = useStore((s) => s.setAutonomous);
   const appliedPlans = useStore((s) => s.appliedPlans);
+  const mode = useStore((s) => s.mode);
 
   return (
-    <div className="panel flex flex-col h-full overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
+    <div className="panel flex flex-col shrink-0">
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-border shrink-0">
         <span className="panel-header">AI Recommendations</span>
         <button
           onClick={() => setAutonomous(!autonomous)}
@@ -111,11 +140,22 @@ export default function AiPanel() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2.5">
+      <div className="p-2.5">
         {plans.length === 0 && (
-          <div className="text-xs text-muted p-2">
-            No active conflicts. The optimizer is monitoring the look-ahead window
-            (45 min) for headway, platform and congestion risks.
+          <div className="text-xs text-muted p-2 animate-fadeIn">
+            {mode === "live" ? (
+              <>
+                <div className="skeleton h-3 w-3/4 mb-2" />
+                <div className="skeleton h-3 w-1/2 mb-3" />
+                OR-Tools optimizer monitoring the 45-min look-ahead. Inject a disruption to see a
+                real CP-SAT resolution plan.
+              </>
+            ) : (
+              <>
+                <div className="text-safe/80 mb-1">Network nominal</div>
+                No active conflicts. Use What-if or Demo to trigger the AI pipeline.
+              </>
+            )}
           </div>
         )}
         {plans.map((p) => (

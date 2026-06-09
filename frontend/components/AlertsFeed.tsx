@@ -21,16 +21,18 @@ const sevText: Record<string, string> = {
 
 export default function AlertsFeed() {
   const alerts = useStore((s) => s.alerts);
-  const selectTrain = useStore((s) => s.selectTrain);
+  const conflicts = useStore((s) => s.conflicts);
+  const focusConflict = useStore((s) => s.focusConflict);
   const setTrack = useStore((s) => s.setTrack);
+  const focusConflictId = useStore((s) => s.focusConflictId);
 
   return (
-    <div className="panel flex flex-col h-full overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
+    <div className="panel flex flex-col shrink-0">
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-border shrink-0">
         <span className="panel-header">Live Alerts</span>
         <span className="tag text-muted">{alerts.length} active</span>
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div className="scroll-panel max-h-[38vh]">
         {alerts.length === 0 && (
           <div className="p-4 text-xs text-muted">
             No active alerts. Network nominal.
@@ -40,14 +42,15 @@ export default function AlertsFeed() {
           <button
             key={a.id}
             onClick={() => {
-              if (a.trains[0]) {
-                selectTrain(a.trains[0]);
-                setTrack(a.trains[0]);
-              }
+              const conflict = conflicts.find((c) => c.id === a.id);
+              if (conflict) focusConflict(conflict.id);
+              else if (a.trains[0]) setTrack(a.trains[0]);
             }}
             className={`w-full text-left px-3 py-2.5 border-b border-border/60 border-l-2 ${
               sevStyles[a.severity]
-            } hover:bg-white/5 transition-colors`}
+            } hover:bg-white/5 transition-colors ${
+              focusConflictId === a.id ? "ring-1 ring-inset ring-cyan/40 bg-cyan/5" : ""
+            }`}
           >
             <div className="flex items-center justify-between">
               <span className={`text-[11px] font-semibold uppercase tracking-wide ${sevText[a.severity]}`}>

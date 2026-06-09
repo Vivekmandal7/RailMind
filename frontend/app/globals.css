@@ -37,6 +37,11 @@ body {
   background: #14171f;
   border: 1px solid #242a35;
   border-radius: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.panel:hover {
+  border-color: #2a3140;
 }
 
 .panel-header {
@@ -52,6 +57,7 @@ body {
   padding: 2px 6px;
   border-radius: 6px;
   border: 1px solid #242a35;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .grid-bg {
@@ -69,4 +75,89 @@ body {
   inset: 0;
   background: linear-gradient(90deg, transparent, rgba(58, 208, 222, 0.15), transparent);
   animation: sweep 2.4s linear infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.35s ease-out both;
+}
+
+@keyframes captionIn {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+.animate-captionIn {
+  animation: captionIn 0.4s ease-out both;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #1a1e27 25%, #242a35 50%, #1a1e27 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes kpiTick {
+  0% { transform: translateY(0); }
+  40% { transform: translateY(-2px); }
+  100% { transform: translateY(0); }
+}
+.kpi-tick {
+  animation: kpiTick 0.35s ease-out;
+}
+
+.scroll-panel {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scroll-x-panel {
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.gpu-layer {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* deck.gl layers above MapLibre raster tiles */
+.network-map .maplibregl-map {
+  position: absolute !important;
+  inset: 0;
+  z-index: 0 !important;
+}
+.network-map .deckgl-overlay,
+.network-map .deckgl-overlay-wrapper,
+.network-map > div:first-child {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 1 !important;
+  pointer-events: none;
+}
+.network-map .deckgl-overlay-wrapper canvas {
+  pointer-events: auto;
+}
+
+/* Phase 1 — full-viewport Mapbox basemap */
+.india-map,
+.india-map .mapboxgl-map {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+.india-map .mapboxgl-canvas {
+  outline: none;
 }

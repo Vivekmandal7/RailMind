@@ -1,15 +1,19 @@
 "use client";
 import { useStore } from "@/store/useStore";
 import { fmtClockS } from "@/lib/geo";
+import AnimatedNumber from "@/components/AnimatedNumber";
+import DemoMode from "@/components/DemoMode";
 
 function Kpi({
   label,
   value,
+  numeric,
   sub,
   tone = "text"
 }: {
   label: string;
   value: string;
+  numeric?: number;
   sub?: string;
   tone?: "text" | "safe" | "amber" | "cyan" | "risk";
 }) {
@@ -24,9 +28,18 @@ function Kpi({
       ? "text-risk"
       : "text-text";
   return (
-    <div className="flex flex-col px-4 py-1.5 border-r border-border min-w-[118px]">
+    <div className="flex flex-col px-4 py-1.5 border-r border-border min-w-[118px] transition-colors duration-300">
       <span className="panel-header">{label}</span>
-      <span className={`font-mono text-xl leading-tight ${toneClass}`}>{value}</span>
+      <span className={`font-mono text-xl leading-tight kpi-tick ${toneClass}`}>
+        {numeric !== undefined ? (
+          <>
+            <AnimatedNumber value={numeric} />
+            {value.replace(String(numeric), "")}
+          </>
+        ) : (
+          value
+        )}
+      </span>
       {sub && <span className="text-[10px] text-muted font-mono">{sub}</span>}
     </div>
   );
@@ -77,21 +90,26 @@ export default function KpiBar() {
         </span>
       </div>
       <Kpi label="Sim Clock" value={fmtClockS(simSec)} sub={`IST · ${speed}× ${mode === "live" ? "engine" : "sim"}`} tone="cyan" />
-      <Kpi label="On-time" value={`${onTimePct}%`} sub={`avg +${avgDelay}m`} tone={onTimePct >= 80 ? "safe" : "amber"} />
-      <Kpi label="Trains Live" value={`${active.length}`} sub={`of ${states.length} services`} />
+      <Kpi label="On-time" value={`${onTimePct}%`} numeric={onTimePct} sub={`avg +${avgDelay}m`} tone={onTimePct >= 80 ? "safe" : "amber"} />
+      <Kpi label="Trains Live" value={`${active.length}`} numeric={active.length} sub={`of ${states.length} services`} />
       <Kpi
         label="Active Risks"
         value={`${risks}`}
+        numeric={risks}
         sub={`${crit} critical`}
         tone={crit > 0 ? "risk" : risks > 0 ? "amber" : "safe"}
       />
       <Kpi
         label="Safety Score"
         value={`${safety}`}
+        numeric={safety}
         sub="/ 100"
         tone={safety >= 85 ? "safe" : safety >= 60 ? "amber" : "risk"}
       />
       <div className="flex-1" />
+      <div className="flex items-center px-3 gap-2 border-r border-border">
+        <DemoMode />
+      </div>
       <div className="flex items-center px-4 gap-2">
         <span className="panel-header">AI Autonomy</span>
         <span

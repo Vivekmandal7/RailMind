@@ -1,10 +1,11 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useStore } from "@/store/useStore";
 import { fmtClock } from "@/lib/geo";
 
 export default function Tracker() {
   const net = useStore((s) => s.net);
+  const corridorName = useStore((s) => s.corridorName);
   const states = useStore((s) => s.states);
   const trackTrain = useStore((s) => s.trackTrain);
   const setTrack = useStore((s) => s.setTrack);
@@ -14,6 +15,18 @@ export default function Tracker() {
   const [q, setQ] = useState("");
   const [origin, setOrigin] = useState("");
   const [dest, setDest] = useState("");
+
+  // Reset O–D when the loaded corridor changes (avoid stale NDLS–NDLS on India-wide).
+  useEffect(() => {
+    setOrigin("");
+    setDest("");
+    setQ("");
+  }, [corridorName, net.stations.length]);
+
+  const destStations = useMemo(
+    () => net.stations.filter((s) => s.code !== origin),
+    [net.stations, origin]
+  );
 
   const suggestions = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -78,7 +91,11 @@ export default function Tracker() {
         <div className="flex items-center gap-1.5 mt-2">
           <select
             value={origin}
-            onChange={(e) => setOrigin(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value;
+              setOrigin(next);
+              if (dest === next) setDest("");
+            }}
             className="flex-1 bg-base border border-border rounded-lg px-2 py-1.5 text-xs font-mono text-text focus:outline-none focus:border-cyan/60"
           >
             <option value="">Origin</option>
@@ -95,7 +112,7 @@ export default function Tracker() {
             className="flex-1 bg-base border border-border rounded-lg px-2 py-1.5 text-xs font-mono text-text focus:outline-none focus:border-cyan/60"
           >
             <option value="">Destination</option>
-            {net.stations.map((s) => (
+            {destStations.map((s) => (
               <option key={s.code} value={s.code}>
                 {s.code} · {s.name}
               </option>

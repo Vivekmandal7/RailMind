@@ -77,6 +77,7 @@ class GBMDelayForecaster(DelayForecaster):
         self.model_path = Path(model_path)
         self.model = None
         self.kind = "heuristic"
+        self.model_source = ""
         self._load()
 
     def _load(self) -> None:
@@ -87,11 +88,20 @@ class GBMDelayForecaster(DelayForecaster):
         if not self.model_path.exists():
             return
         try:
-            self.model = joblib.load(self.model_path)
-            self.kind = "ml"
+            loaded = joblib.load(self.model_path)
+            if isinstance(loaded, dict):
+                self.model = loaded.get("model")
+                src = loaded.get("source", "ml")
+            else:
+                self.model = loaded
+                src = "ml"
+            if self.model is not None:
+                self.kind = "ml"
+                self.model_source = src
         except Exception:
             self.model = None
             self.kind = "heuristic"
+            self.model_source = ""
 
     # ---- inference ------------------------------------------------------- #
     def forecast(

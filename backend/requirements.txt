@@ -5,3 +5,8 @@ networkx==3.4.2
 PyYAML==6.0.2
 httpx==0.28.1
 pytest==8.3.4
+python-dotenv==1.0.1
+ortools==9.12.4544
+scikit-learn==1.5.2
+joblib==1.4.2
+numpy==2.1.3

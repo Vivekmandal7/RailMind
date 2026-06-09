@@ -1,6 +1,18 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useStore } from "@/store/useStore";
+import { pickBlockSection, labelSection } from "@/lib/disruptionTarget";
+import type { NetworkData, TrainState } from "@/lib/types";
+
+function defaultBlockSection(net: NetworkData, states: TrainState[]): string {
+  const pick = pickBlockSection(net, states);
+  if (pick) return pick.sectionId;
+  const ghat = net.sections.find((s) => s.ghat);
+  if (ghat) return ghat.id;
+  const single = net.sections.find((s) => s.line === "single");
+  if (single) return single.id;
+  return net.sections[0]?.id ?? "KSRA-IGP";
+}
 
 function InjectBtn({
   label,
@@ -25,24 +37,49 @@ function InjectBtn({
 }
 
 export default function WhatIf() {
+  const net = useStore((s) => s.net);
+  const states = useStore((s) => s.states);
   const injectBreakdown = useStore((s) => s.injectBreakdown);
   const injectBlock = useStore((s) => s.injectBlock);
   const injectFog = useStore((s) => s.injectFog);
   const clearDisruptions = useStore((s) => s.clearDisruptions);
+  const injectNotice = useStore((s) => s.injectNotice);
   const runNL = useStore((s) => s.runNL);
   const nlLog = useStore((s) => s.nlLog);
   const disruptions = useStore((s) => s.disruptions);
   const passengerLayer = useStore((s) => s.passengerLayer);
   const togglePassengerLayer = useStore((s) => s.togglePassengerLayer);
 
+  const blockSection = useMemo(() => defaultBlockSection(net, states), [net, states]);
+  const blockLabel = useMemo(() => labelSection(net, blockSection), [net, blockSection]);
+
   const [cmd, setCmd] = useState("");
   const [llm, setLlm] = useState<boolean | null>(null);
+  const [llmDetail, setLlmDetail] = useState("");
 
   useEffect(() => {
-    fetch("/api/nl")
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") || "http://127.0.0.1:8000"}/health`)
       .then((r) => r.json())
-      .then((d) => setLlm(Boolean(d.enabled)))
-      .catch(() => setLlm(false));
+      .then((d) => {
+        const providers = d.llm_providers as string[] | undefined;
+        setLlm(Boolean(d.llm_enabled));
+        setLlmDetail(
+          providers && providers.length > 0
+            ? providers.join(" + ")
+            : d.delay_model === "ml"
+            ? "ML only"
+            : "rule-based"
+        );
+      })
+      .catch(() => {
+        fetch("/api/nl")
+          .then((r) => r.json())
+          .then((d) => {
+            setLlm(Boolean(d.enabled));
+            setLlmDetail("local");
+          })
+          .catch(() => setLlm(false));
+      });
   }, []);
 
   const submit = () => {
@@ -52,8 +89,8 @@ export default function WhatIf() {
   };
 
   return (
-    <div className="panel flex flex-col overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
+    <div className="panel flex flex-col shrink-0">
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-border shrink-0">
         <span className="panel-header">What-if Injector</span>
         <button
           onClick={togglePassengerLayer}
@@ -75,9 +112,9 @@ export default function WhatIf() {
           />
           <InjectBtn
             label="Block"
-            desc="Close NGP–BPQ section"
+            desc={`Close ${blockLabel} section`}
             tone="border-amber/40 text-amber"
-            onClick={() => injectBlock("NGP-BPQ")}
+            onClick={() => injectBlock()}
           />
           <InjectBtn
             label="Fog"
@@ -87,6 +124,12 @@ export default function WhatIf() {
           />
         </div>
 
+        {injectNotice && (
+          <p className="text-[10px] text-amber border border-amber/30 bg-amber/10 rounded-lg px-2 py-1.5 leading-snug">
+            {injectNotice}
+          </p>
+        )}
+
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="panel-header">Natural-language what-if</span>
@@ -94,9 +137,9 @@ export default function WhatIf() {
               className={`tag text-[9px] ${
                 llm ? "text-safe border-safe/50" : "text-muted"
               }`}
-              title={llm ? "LLM enhancement active" : "No LLM key — using local rule engine"}
+              title={llm ? `LLM: ${llmDetail}` : "No LLM key — backend uses rule engine"}
             >
-              LLM {llm === null ? "…" : llm ? "LIVE" : "LOCAL"}
+              LLM {llm === null ? "…" : llm ? llmDetail || "LIVE" : "LOCAL"}
             </span>
           </div>
           <div className="flex gap-1.5">
