@@ -94,6 +94,9 @@ class Orchestrator:
 
         self.window_start, self.window_end = self._compute_window()
         self.sim_sec = start_clock_sec if start_clock_sec is not None else self.window_start
+        # Loop back to the (busy) start clock rather than the empty window edge,
+        # so the corridor never sits with zero active trains for long.
+        self._loop_reset = self.sim_sec
         self.playing = True
 
         self.delays_sec: dict[str, float] = {}
@@ -160,7 +163,7 @@ class Orchestrator:
         if self.playing:
             self.sim_sec += real_dt * self.time_scale
             if self.sim_sec >= self.window_end:
-                self.sim_sec = self.window_start if self.loop else self.window_end
+                self.sim_sec = self._loop_reset if self.loop else self.window_end
         self._refresh_live()
 
     def run_pipeline(self) -> None:

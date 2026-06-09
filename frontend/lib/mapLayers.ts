@@ -145,6 +145,57 @@ export function buildRailLayers(
   return layers;
 }
 
+/** Draw the ACTUAL corridor track (backend sections) under the live trains —
+ *  bright and always visible, only lightly dimmed when a train is selected. */
+export function buildCorridorRailLayers(
+  sections: { id: string; geometry: LngLat[]; ghat?: boolean; line?: string }[],
+  stations: { lng: number; lat: number }[],
+  zoom: number,
+  dim: boolean
+): Layer[] {
+  const w = routeWidth(zoom);
+  const lines = sections.filter((s) => s.geometry && s.geometry.length > 1);
+  return [
+    new PathLayer({
+      id: "corridor-rail-glow",
+      data: lines,
+      getPath: (d) => d.geometry,
+      getColor: [70, 150, 200, dim ? 40 : 75],
+      getWidth: w + 4,
+      widthUnits: "pixels",
+      capRounded: true,
+      jointRounded: true,
+      parameters: { depthTest: false }
+    }),
+    new PathLayer({
+      id: "corridor-rail",
+      data: lines,
+      getPath: (d) => d.geometry,
+      getColor: (d) =>
+        d.ghat || d.line === "single"
+          ? [214, 173, 78, dim ? 175 : 240]
+          : [129, 169, 198, dim ? 165 : 235],
+      getWidth: w + 1,
+      widthUnits: "pixels",
+      capRounded: true,
+      jointRounded: true,
+      parameters: { depthTest: false }
+    }),
+    new ScatterplotLayer({
+      id: "corridor-stations",
+      data: stations,
+      getPosition: (d) => [d.lng, d.lat],
+      getRadius: zoom >= 9 ? 4 : 3,
+      radiusUnits: "pixels",
+      getFillColor: [206, 214, 226, dim ? 170 : 235],
+      getLineColor: [18, 22, 30, 220],
+      lineWidthMinPixels: 1,
+      stroked: true,
+      parameters: { depthTest: false }
+    })
+  ];
+}
+
 function buildSelectedRouteLayer(selected: TrainSnapshot, zoom: number): Layer[] {
   return [
     new PathLayer({
@@ -237,7 +288,7 @@ function buildTrainLayers(
 
   // Radar ping: moving trains emit an expanding, fading halo so the map reads
   // as live even when geographic drift is slow at city zoom. Purely visual.
-  const pulse = 0.5 + 0.5 * Math.sin(frameTick * 0.12);
+  const pulse = 0.5 + 0.5 * Math.sin(frameTick * 0.08);
   if (moving.length > 0) {
     layers.push(
       new ScatterplotLayer({
@@ -245,11 +296,11 @@ function buildTrainLayers(
         data: moving,
         getPosition: (d: TrainSnapshot) => d.position,
         getRadius: (d: TrainSnapshot) =>
-          (d.number === selectedTrainNumber ? 16 : 11) + pulse * 12,
+          (d.number === selectedTrainNumber ? 14 : 10) + pulse * 6,
         radiusUnits: "pixels",
         getFillColor: (d: TrainSnapshot) => {
           const c = statusColor(d.status);
-          return [c[0], c[1], c[2], Math.round(46 * (1 - pulse))];
+          return [c[0], c[1], c[2], Math.round(30 * (1 - pulse))];
         },
         parameters: { depthTest: false },
         pickable: false,

@@ -12,7 +12,12 @@ import {
   MAPBOX_SATELLITE_STYLE
 } from "@/lib/indiaViewport";
 import { boundsFromMap, loadIndiaRailNetwork, pointInBounds, type LngLat } from "@/lib/indiaRailNetwork";
-import { buildDynamicMapLayers, buildRailLayers, isTrainPick } from "@/lib/mapLayers";
+import {
+  buildCorridorRailLayers,
+  buildDynamicMapLayers,
+  buildRailLayers,
+  isTrainPick
+} from "@/lib/mapLayers";
 import {
   STATIC_SIM_SEC,
   computeTrainSnapshot,
@@ -150,6 +155,8 @@ export default function IndiaMap() {
   const localPlans = useStore((s) => s.plans);
 
   const isLive = mode === "live" && connected;
+  const isLiveRef = useRef(isLive);
+  isLiveRef.current = isLive;
 
   const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
   const [hoveredNumber, setHoveredNumber] = useState<string | null>(null);
@@ -158,10 +165,12 @@ export default function IndiaMap() {
   const [speed, setSpeed] = useState<SimSpeedPreset>(15);
   const [is3D, setIs3D] = useState(false);
   const [satellite, setSatellite] = useState(false);
-  const [mapReady, setMapReady] = useState(false);
+  // The actual loaded map, captured in its own `load` event. Held in STATE (not
+  // just the ref) so the corridor-fit effect re-runs with a guaranteed-valid map
+  // reference — robust to StrictMode's mount/dispose/mount race on the ref.
+  const [loadedMap, setLoadedMap] = useState<mapboxgl.Map | null>(null);
   const [detailSnap, setDetailSnap] = useState<TrainSnapshot | null>(null);
   const lastMapResetRef = useRef(0);
-  const didFitCorridorRef = useRef(false);
 
   /** Bounds of the live corridor (from its real station coords) so we frame the
    *  trains on connect instead of dumping the user on an all-Asia view. */
@@ -171,6 +180,20 @@ export default function IndiaMap() {
     if (coords.length < 2) return null;
     return boundsFromPolyline(coords);
   }, [isLive, net]);
+  const corridorBoundsRef = useRef(corridorBounds);
+  corridorBoundsRef.current = corridorBounds;
+
+  /** Frame the corridor (live) or all-India (local) on the given map. */
+  const frameInitialView = useCallback((map: mapboxgl.Map) => {
+    const b = corridorBoundsRef.current;
+    if (isLiveRef.current && b) {
+      map.fitBounds(b, { padding: 90, maxZoom: 11, duration: 0, essential: true });
+    } else {
+      map.fitBounds(INDIA_BOUNDS, { padding: INDIA_FIT_PADDING, duration: 0 });
+    }
+  }, []);
+  const frameInitialViewRef = useRef(frameInitialView);
+  frameInitialViewRef.current = frameInitialView;
 
   selectedRef.current = selectedNumber;
   hoveredRef.current = hoveredNumber;
@@ -231,10 +254,21 @@ export default function IndiaMap() {
     const map = mapRef.current;
     if (!map) return;
     const zoom = map.getZoom();
-    const bounds = boundsFromMap(map);
     const dim = Boolean(selectedRef.current);
-    railLayersRef.current = buildRailLayers(bounds, zoom, dim);
-  }, []);
+    // Live mode: draw the REAL corridor track (backend sections) so there is
+    // always a clear, bright line directly under the trains. National/local
+    // fallback uses the bundled India rail network.
+    if (isLive && net.sections.length > 0) {
+      railLayersRef.current = buildCorridorRailLayers(
+        net.sections as never,
+        net.stations,
+        zoom,
+        dim
+      );
+    } else {
+      railLayersRef.current = buildRailLayers(boundsFromMap(map), zoom, dim);
+    }
+  }, [isLive, net]);
 
   const renderFrame = useCallback(
     (dtReal = 0) => {
@@ -393,25 +427,23 @@ export default function IndiaMap() {
     mapRef.current?.easeTo({ pitch: is3D ? 55 : 0, duration: 800, essential: true });
   }, [is3D]);
 
-  // Frame the live corridor as soon as the map + network are both ready, so the
-  // operator lands on the trains — not an empty subcontinent.
+  // Frame the live corridor as soon as the map style is ready, so the operator
+  // lands on the trains — not an empty subcontinent. Polls until the map exists
+  // and its style has loaded (robust to mount/connect ordering + StrictMode),
+  // then fits once.
+  // When the live session connects (isLive flips true / bounds arrive) AFTER the
+  // map already loaded, fly to the corridor now. The load handler covers the
+  // case where live was ready first.
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady || !isLive || !corridorBounds || didFitCorridorRef.current) return;
-    didFitCorridorRef.current = true;
-    map.fitBounds(corridorBounds, {
+    if (!loadedMap || !isLive || !corridorBounds) return;
+    loadedMap.fitBounds(corridorBounds, {
       padding: 90,
+      maxZoom: 11,
       duration: INDIA_FLY_DURATION_MS,
       essential: true,
-      maxZoom: 11,
       pitch: is3DRef.current ? 55 : 0
     });
-  }, [mapReady, isLive, corridorBounds]);
-
-  // Reset the one-shot fit if the live session drops, so reconnect reframes.
-  useEffect(() => {
-    if (!isLive) didFitCorridorRef.current = false;
-  }, [isLive]);
+  }, [loadedMap, isLive, corridorBounds]);
 
   useEffect(() => {
     rebuildRailCache();
@@ -558,6 +590,7 @@ export default function IndiaMap() {
     const el = containerRef.current;
     if (!el || !token || mapRef.current) return;
 
+    setLoadedMap(null);
     mapboxgl.accessToken = token;
 
     const map = new mapboxgl.Map({
@@ -595,13 +628,29 @@ export default function IndiaMap() {
       }
     });
 
-    map.on("load", () => {
+    mapRef.current = map;
+    overlayRef.current = overlay;
+
+    // Attach the deck overlay + frame the view once the style is ready. The
+    // 'load' event can be missed (cached style / fast navigation), which would
+    // leave the overlay unattached → no trains, no track. So we ALSO poll
+    // isStyleLoaded() and run the (idempotent) setup whichever fires first.
+    let ready = false;
+    function onMapReady() {
+      if (ready || mapRef.current !== map) return;
+      ready = true;
+      window.clearTimeout(readyTimer);
       map.addControl(overlay);
-      map.fitBounds(INDIA_BOUNDS, { padding: INDIA_FIT_PADDING, duration: 0 });
+      frameInitialViewRef.current(map);
       rebuildRailCacheRef.current();
       renderFrameRef.current(0);
-      setMapReady(true);
-    });
+      setLoadedMap(map);
+    }
+    // Trigger on whichever fires first; the timeout guarantees setup even when
+    // 'load'/isStyleLoaded misbehave with interleaved deck overlays.
+    const readyTimer = window.setTimeout(onMapReady, 900);
+    map.on("load", onMapReady);
+    map.on("idle", onMapReady);
 
     map.on("move", () => scheduleRailRebuildRef.current());
     map.on("zoom", () => scheduleRailRebuildRef.current());
@@ -616,16 +665,15 @@ export default function IndiaMap() {
       console.warn("[Mapbox]", err);
     });
 
-    mapRef.current = map;
-    overlayRef.current = overlay;
-
     return () => {
+      window.clearTimeout(readyTimer);
       if (moveRafRef.current) cancelAnimationFrame(moveRafRef.current);
       if (animRafRef.current) cancelAnimationFrame(animRafRef.current);
       const ov = overlayRef.current;
       const m = mapRef.current;
       overlayRef.current = null;
       mapRef.current = null;
+      setLoadedMap(null);
       if (m) {
         requestAnimationFrame(() => disposeMapboxMap(m, ov));
       }
