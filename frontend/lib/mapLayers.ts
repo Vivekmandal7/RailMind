@@ -497,6 +497,54 @@ function buildConflictLayers(
   return layers;
 }
 
+export interface ClearedSection {
+  path: LngLat[];
+  frame: number; // frameTick when the conflict cleared
+}
+
+/** Green easing pulse on a section whose conflict just resolved — the visible
+ *  "back to normal" so an operator knows the red alarm has actually cleared. */
+function buildClearedLayers(
+  cleared: ClearedSection[],
+  frameTick: number,
+  zoom: number
+): Layer[] {
+  const LIFE = 150; // frames (~2.5s @ 60fps)
+  const live = cleared.filter((c) => frameTick - c.frame < LIFE);
+  if (live.length === 0) return [];
+  const w = routeWidth(zoom);
+  return live.flatMap((c, i) => {
+    const t = Math.min(1, (frameTick - c.frame) / LIFE); // 0 -> 1
+    const alpha = Math.round(210 * (1 - t));
+    return [
+      new PathLayer({
+        id: `cleared-glow-${i}`,
+        data: [{ path: c.path }],
+        getPath: (d: { path: LngLat[] }) => d.path,
+        getColor: [52, 210, 122, Math.round(alpha * 0.45)],
+        getWidth: w + 10 + t * 16,
+        widthUnits: "pixels",
+        capRounded: true,
+        jointRounded: true,
+        parameters: { depthTest: false },
+        updateTriggers: { getColor: frameTick, getWidth: frameTick }
+      }),
+      new PathLayer({
+        id: `cleared-${i}`,
+        data: [{ path: c.path }],
+        getPath: (d: { path: LngLat[] }) => d.path,
+        getColor: [80, 230, 140, alpha],
+        getWidth: w + 3,
+        widthUnits: "pixels",
+        capRounded: true,
+        jointRounded: true,
+        parameters: { depthTest: false },
+        updateTriggers: { getColor: frameTick }
+      })
+    ];
+  });
+}
+
 export function buildDynamicMapLayers(opts: {
   zoom: number;
   selectedTrainNumber: string | null;
@@ -506,6 +554,7 @@ export function buildDynamicMapLayers(opts: {
   conflicts?: Conflict[];
   plans?: ResolutionPlan[];
   sectionMap?: Record<string, { geometry: LngLat[] }>;
+  cleared?: ClearedSection[];
   frameTick?: number;
 }): Layer[] {
   const {
@@ -517,10 +566,15 @@ export function buildDynamicMapLayers(opts: {
     conflicts = [],
     plans = [],
     sectionMap = {},
+    cleared = [],
     frameTick = 0
   } = opts;
 
   const layers: Layer[] = [];
+
+  if (cleared.length > 0) {
+    layers.push(...buildClearedLayers(cleared, frameTick, zoom));
+  }
 
   if (conflicts.length > 0 && Object.keys(sectionMap).length > 0) {
     layers.push(...buildConflictLayers(conflicts, plans, sectionMap, frameTick, zoom));

@@ -119,6 +119,9 @@ export default function IndiaMap() {
 
   const selectedRef = useRef<string | null>(null);
   const hoveredRef = useRef<string | null>(null);
+  // conflict-id -> section location, to detect when a conflict clears
+  const prevConflictMetaRef = useRef<Map<string, string>>(new Map());
+  const clearedRef = useRef<Map<string, { path: LngLat[]; frame: number }>>(new Map());
   const simSecRef = useRef(STATIC_SIM_SEC);
   const playingRef = useRef(true);
   const speedRef = useRef<SimSpeedPreset>(15);
@@ -232,6 +235,21 @@ export default function IndiaMap() {
       const overlay = overlayRef.current;
       if (!map || !overlay) return;
 
+      // Detect conflicts that just cleared → schedule a green "back to normal"
+      // flash on their section so the operator sees the red alarm resolve.
+      const curMeta = new Map(mapConflicts.map((c) => [c.id, c.location]));
+      for (const id of curMeta.keys()) clearedRef.current.delete(id); // re-detected
+      for (const [id, loc] of prevConflictMetaRef.current) {
+        if (!curMeta.has(id) && !clearedRef.current.has(id)) {
+          const path = sectionGeometry(loc, sectionMap);
+          if (path && path.length > 1) clearedRef.current.set(id, { path, frame: frameTick });
+        }
+      }
+      prevConflictMetaRef.current = curMeta;
+      for (const [id, e] of clearedRef.current) {
+        if (frameTick - e.frame > 170) clearedRef.current.delete(id);
+      }
+
       const zoom = map.getZoom();
       overlay.setProps({
         layers: [
@@ -245,6 +263,7 @@ export default function IndiaMap() {
             conflicts: mapConflicts,
             plans: mapPlans,
             sectionMap,
+            cleared: Array.from(clearedRef.current.values()),
             frameTick
           })
         ]
