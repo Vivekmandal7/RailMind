@@ -5,6 +5,7 @@ import { useStore } from "@/store/useStore";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import DemoMode from "@/components/DemoMode";
 import ProvenanceBar from "@/components/ProvenanceBar";
+import CorridorSwitcher from "@/components/CorridorSwitcher";
 
 function Kpi({
   label,
@@ -54,7 +55,6 @@ export default function MapKpiBar() {
   const mode = useStore((s) => s.mode);
   const connected = useStore((s) => s.connected);
   const speed = useStore((s) => s.speed);
-  const corridorName = useStore((s) => s.corridorName);
 
   const live = mode === "live" && connected;
 
@@ -81,9 +81,7 @@ export default function MapKpiBar() {
         </div>
         <div className="leading-tight">
           <div className="font-mono text-sm tracking-wide text-text">RAILMIND</div>
-          <div className="panel-header truncate max-w-[180px]" title={corridorName}>
-            {corridorName}
-          </div>
+          <CorridorSwitcher />
         </div>
         <span
           className={`tag ml-1 ${

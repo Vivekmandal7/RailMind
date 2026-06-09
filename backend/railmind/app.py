@@ -30,10 +30,26 @@ from .models import (
     WhatIfResponse,
 )
 
+CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
 CONFIG_PATH = os.environ.get(
-    "RAILMIND_CONFIG",
-    str(Path(__file__).resolve().parent.parent / "config" / "india_wide.yaml"),
+    "RAILMIND_CONFIG", str(CONFIG_DIR / "india_wide.yaml")
 )
+
+# Switchable corridors (UI corridor selector). Key -> (config file, display name).
+CORRIDORS = {
+    "delhi": ("delhi_ndls_agra.yaml", "New Delhi – Agra"),
+    "mumbai": ("mumbai_csmt_igatpuri.yaml", "Mumbai CSMT – Igatpuri"),
+    "india": ("india_wide.yaml", "India-wide"),
+}
+
+
+def _corridor_key_for(path: str) -> str:
+    name = Path(path).name
+    for key, (fname, _) in CORRIDORS.items():
+        if fname == name:
+            return key
+    return "custom"
+
 
 app = FastAPI(title="RailMind Engine", version="1.0.0")
 app.add_middleware(
@@ -44,6 +60,8 @@ app.add_middleware(
 )
 
 orch = build_orchestrator(CONFIG_PATH)
+current_corridor = _corridor_key_for(CONFIG_PATH)
+_ingest_task: "asyncio.Task | None" = None
 
 
 class Hub:
@@ -111,11 +129,53 @@ async def brain_loop() -> None:
 
 @app.on_event("startup")
 async def _startup() -> None:
+    global _ingest_task
     asyncio.create_task(sim_loop())
     asyncio.create_task(brain_loop())
     worker = getattr(orch, "ingestion_worker", None)
     if worker is not None:
-        asyncio.create_task(worker.run())
+        _ingest_task = asyncio.create_task(worker.run())
+
+
+@app.get("/corridors")
+def corridors() -> dict:
+    return {
+        "current": current_corridor,
+        "corridors": [
+            {"key": k, "name": name} for k, (_, name) in CORRIDORS.items()
+        ],
+    }
+
+
+@app.post("/corridor")
+async def switch_corridor(req: dict) -> dict:
+    """Rebuild the engine on a different corridor without restarting the server.
+
+    The sim/brain loops read the module-level ``orch`` each tick, so swapping it
+    takes effect immediately; the live ingestion worker is restarted for the new
+    corridor's trains."""
+    global orch, current_corridor, _ingest_task
+    key = str(req.get("key", "")).strip()
+    if key not in CORRIDORS:
+        return {"ok": False, "error": f"unknown corridor '{key}'"}
+
+    fname, _name = CORRIDORS[key]
+    # build off the event loop so the swap doesn't stall the live stream
+    new_orch = await asyncio.to_thread(build_orchestrator, str(CONFIG_DIR / fname))
+
+    # stop old ingestion before swapping
+    if _ingest_task is not None:
+        _ingest_task.cancel()
+        _ingest_task = None
+
+    orch = new_orch
+    current_corridor = key
+
+    worker = getattr(orch, "ingestion_worker", None)
+    if worker is not None:
+        _ingest_task = asyncio.create_task(worker.run())
+
+    return {"ok": True, "corridor": key, "name": orch.corridor_name}
 
 
 # ----------------------------- REST ---------------------------------------- #
