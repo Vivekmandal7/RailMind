@@ -50,7 +50,7 @@ export function computeStationBoard(
       source: t.source
     };
 
-    if (d < 0.8 && t.speedKmh < 8) {
+    if (d < 1.1 && t.speedKmh < 14) {
       dwelling.push(base);
     } else if (t.nextStation === station.code && t.speedKmh >= 1 && d < 16) {
       approaching.push({ ...base, distKm: d, etaNextSec: t.etaNextSec, speedKmh: t.speedKmh });

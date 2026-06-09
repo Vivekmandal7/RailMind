@@ -93,6 +93,17 @@ body {
   animation: captionIn 0.4s ease-out both;
 }
 
+/* A train pulling into its platform on the 3D station board. translateZ keeps
+   it raised on the platform; translateX slides it in along the track. */
+@keyframes coachArrive {
+  from { transform: translateZ(26px) translateX(145%); opacity: 0; }
+  60%  { opacity: 1; }
+  to   { transform: translateZ(26px) translateX(0); opacity: 1; }
+}
+.coach-arrive {
+  animation: coachArrive 0.75s cubic-bezier(0.22, 0.68, 0.3, 1) both;
+}
+
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }

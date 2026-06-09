@@ -70,8 +70,23 @@ export default function StationView({ code, onClose }: Props) {
         </div>
       </div>
 
+      {/* Indian Railways yellow station nameboard */}
+      <div className="px-6 pt-3">
+        <div
+          className="flex items-center justify-center gap-2 rounded-sm py-1 px-3"
+          style={{ background: "#f3c531", color: "#1a1206", border: "2px solid #1a1206" }}
+        >
+          <span className="text-[11px] font-black">◄</span>
+          <span className="font-extrabold text-[13px] tracking-wide uppercase truncate">
+            {station.name}
+          </span>
+          <span className="font-mono text-[10px] font-bold opacity-80">· {station.code}</span>
+          <span className="text-[11px] font-black">►</span>
+        </div>
+      </div>
+
       {/* 3D platform deck — looking down the platforms from the concourse */}
-      <div className="relative px-6 pt-7 pb-4 overflow-hidden">
+      <div className="relative px-6 pt-5 pb-4 overflow-hidden">
         {/* receding floor grid for depth */}
         <div
           className="pointer-events-none absolute inset-0"
@@ -116,11 +131,11 @@ export default function StationView({ code, onClose }: Props) {
                 />
                 {t ? (
                   <div
-                    className="absolute left-8 right-2 rounded-[5px] overflow-hidden"
+                    key={t.number}
+                    className="coach-arrive absolute left-8 right-2 rounded-[5px] overflow-hidden"
                     style={{
                       top: -13,
                       height: 34,
-                      transform: "translateZ(26px)",
                       border: `1px solid ${statusHex(t.status)}`,
                       boxShadow: `0 9px 13px rgba(0,0,0,.6), 0 0 15px ${statusHex(t.status)}77`,
                       color: "#0a0f16"
