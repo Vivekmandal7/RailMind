@@ -181,3 +181,38 @@ body {
 .india-map .mapboxgl-canvas {
   outline: none;
 }
+
+/* Theme Mapbox's default (white) controls to match the dark control room. */
+.india-map .mapboxgl-ctrl-group {
+  background: rgba(20, 23, 31, 0.95); /* panel */
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+.india-map .mapboxgl-ctrl-group button {
+  background: transparent;
+  width: 30px;
+  height: 30px;
+}
+.india-map .mapboxgl-ctrl-group button + button {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.india-map .mapboxgl-ctrl-group button:hover {
+  background: rgba(58, 208, 222, 0.12); /* cyan tint */
+}
+/* The +/- glyphs are SVGs tinted via filter; invert so they read on dark. */
+.india-map .mapboxgl-ctrl-group button .mapboxgl-ctrl-icon {
+  filter: invert(1) brightness(1.6);
+  opacity: 0.85;
+}
+/* Compact attribution pill → dark instead of white. */
+.india-map .mapboxgl-ctrl-attrib.mapboxgl-compact {
+  background: rgba(20, 23, 31, 0.9);
+}
+.india-map .mapboxgl-ctrl-attrib.mapboxgl-compact .mapboxgl-ctrl-attrib-button {
+  filter: invert(1) brightness(1.6);
+}
+.india-map .mapboxgl-ctrl-attrib a {
+  color: #99a1ad;
+}

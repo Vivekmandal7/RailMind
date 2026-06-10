@@ -17,8 +17,10 @@ import {
   buildDynamicMapLayers,
   buildRailLayers,
   isStationPick,
-  isTrainPick
+  isTrainPick,
+  pickedTrainNumber
 } from "@/lib/mapLayers";
+import { interpAlong } from "@/lib/geo";
 import {
   STATIC_SIM_SEC,
   computeTrainSnapshot,
@@ -43,6 +45,39 @@ import MapLegend from "@/components/MapLegend";
 import { DemoCaption } from "@/components/DemoMode";
 import { isBenignMapNetworkError } from "@/lib/mapNetworkErrors";
 import "mapbox-gl/dist/mapbox-gl.css";
+
+/** Dark base used everywhere (matches tailwind `base`). */
+const MAP_BG = "#0B0D11";
+
+/** Force the map's base/background to the dark control-room colour so the satellite
+ *  style's white background never flashes through at the edges while tiles stream in
+ *  (was a white strip at the top of the map as the camera panned with a train). */
+function themeMapBackground(map: mapboxgl.Map): void {
+  try {
+    if (map.getLayer("background")) {
+      map.setPaintProperty("background", "background-color", MAP_BG);
+    } else {
+      const firstId = map.getStyle()?.layers?.[0]?.id;
+      map.addLayer(
+        { id: "railmind-bg", type: "background", paint: { "background-color": MAP_BG } },
+        firstId
+      );
+    }
+  } catch {
+    /* style not ready / layer locked — safe to ignore */
+  }
+}
+
+/** Status dot colour for the "now following" HUD chip (matches the map legend). */
+const HUD_STATUS_COLOR: Record<string, string> = {
+  running: "#37D99A",
+  onTime: "#37D99A",
+  scheduled: "#37D99A",
+  delayed: "#F5B027",
+  held: "#FF5C5C",
+  conflict: "#FF5C5C",
+  arrived: "#99A1AD"
+};
 
 function boundsFromPolyline(path: LngLat[]): [[number, number], [number, number]] {
   let minLng = Infinity;
@@ -112,6 +147,7 @@ function buildIndiaSectionMap(): Record<string, { geometry: LngLat[] }> {
 
 export default function IndiaMap() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const overlayRef = useRef<MapboxOverlay | null>(null);
   const moveRafRef = useRef(0);
@@ -130,6 +166,10 @@ export default function IndiaMap() {
   const railLayersRef = useRef<ReturnType<typeof buildRailLayers>>([]);
   const interpolatorRef = useRef(new TwinInterpolator());
   const lastLiveTrainsRef = useRef<TrainSnapshot[]>([]);
+  const smoothBearingRef = useRef<Record<string, number>>({});
+  const trackTrainRef = useRef<string | null>(null);
+  const lastFollowUpdateRef = useRef(0);
+  const lastUserGestureRef = useRef(0);
   const indiaSectionMap = useMemo(() => buildIndiaSectionMap(), []);
 
   const mode = useStore((s) => s.mode);
@@ -176,6 +216,13 @@ export default function IndiaMap() {
   // reference — robust to StrictMode's mount/dispose/mount race on the ref.
   const [loadedMap, setLoadedMap] = useState<mapboxgl.Map | null>(null);
   const [detailSnap, setDetailSnap] = useState<TrainSnapshot | null>(null);
+  const [followHud, setFollowHud] = useState<{
+    number: string;
+    name?: string;
+    speed: number;
+    status: string;
+  } | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const lastMapResetRef = useRef(0);
 
   /** Bounds of the live corridor (from its real station coords) so we frame the
@@ -204,6 +251,7 @@ export default function IndiaMap() {
   selectedRef.current = selectedNumber;
   hoveredRef.current = hoveredNumber;
   is3DRef.current = is3D;
+  trackTrainRef.current = trackTrain;
 
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
@@ -222,6 +270,11 @@ export default function IndiaMap() {
       speedRef.current = storeSpeed as SimSpeedPreset;
     } else if (mode === "local") {
       interpolatorRef.current.reset();
+      // Keep local refs aligned so RAF render + controls behave; store is authoritative for advance.
+      playingRef.current = storePlaying;
+      speedRef.current = (storeSpeed as SimSpeedPreset) ?? 60;
+      simSecRef.current = storeSimSec;
+      setSimSecDisplay(storeSimSec);
     }
   }, [isLive, mode, liveStates, lastSnapshotAt, storeSimSec, storePlaying, storeSpeed]);
 
@@ -264,7 +317,8 @@ export default function IndiaMap() {
             plans: mapPlans,
             sectionMap,
             cleared: Array.from(clearedRef.current.values()),
-            frameTick
+            frameTick,
+            show3DTrains: is3DRef.current
           })
         ]
       });
@@ -314,26 +368,70 @@ export default function IndiaMap() {
           ? allLive.find((t) => t.number === selected) ?? null
           : null;
       } else {
-        const simSec = simSecRef.current;
-        const inView = (snap: TrainSnapshot) =>
-          pointInBounds(snap.position[0], snap.position[1], bounds);
-        const routeInView = (def: TrainDefinition) => {
-          const pl = def.polyline;
-          if (pl.length === 0) return false;
-          const step = Math.max(1, Math.floor(pl.length / 8));
-          for (let i = 0; i < pl.length; i += step) {
-            if (pointInBounds(pl[i][0], pl[i][1], bounds)) return true;
-          }
-          return false;
+        // Local: derive snapshots from the single store simulation (now uses eased kinematics).
+        // This makes map icons, roster speeds, ETAs, and conflict detection perfectly consistent.
+        const st = useStore.getState();
+        const activeStates = st.states.filter((t) => t.active || t.number === selected);
+        const geomMap = st.trainGeom;
+        const netTrains = st.net.trains;
+        const netTrainByNum: Record<string, any> = {};
+        for (const nt of netTrains) netTrainByNum[nt.number] = nt;
+
+        const toSnap = (s: any): TrainSnapshot => {
+          const g = geomMap[s.number];
+          const nt = netTrainByNum[s.number];
+          const poly = g?.polyline ?? nt?.polyline ?? [];
+          const cum = g?.cum ?? nt?.polyCumKm ?? [];
+          return {
+            number: s.number,
+            name: s.name,
+            routeStations: nt?.route ?? [],
+            polyline: poly,
+            polyCumKm: cum,
+            position: s.position,
+            bearing: s.bearing,
+            distKm: s.distKm,
+            speedKmh: s.speedKmh,
+            status: s.status,
+            delayMinutes: s.delayMinutes,
+            estPassengers: s.estPassengers,
+            nextStation: s.nextStation,
+            prevStation: s.prevStation,
+            etaNextSec: s.etaNextSec,
+            etaFinalSec: s.etaFinalSec ?? 0,
+            active: s.active
+          };
         };
-        trains = computeVisibleSnapshots(simSec, inView, selected, routeInView);
-        selectedTrain = selected
-          ? trains.find((t) => t.number === selected) ??
-            (() => {
-              const def = findTrainDefinition(selected);
-              return def ? computeTrainSnapshot(def, simSec) : null;
-            })()
-          : null;
+
+        const inViewPos = (pos: LngLat) => pointInBounds(pos[0], pos[1], bounds);
+        const cand = activeStates.map(toSnap);
+        trains = cand.filter((t) => inViewPos(t.position) || t.number === selected);
+        if (selected && !trains.some((t) => t.number === selected)) {
+          const sel = cand.find((t) => t.number === selected) || toSnap(st.states.find((x: any) => x.number === selected));
+          if (sel) trains = [...trains, sel];
+        }
+        selectedTrain = selected ? trains.find((t) => t.number === selected) ?? null : null;
+
+        // Smooth bearing per-train so icons rotate fluidly across polyline kinks (realistic "steering").
+        trains = trains.map((t) => {
+          const prev = smoothBearingRef.current[t.number] ?? t.bearing;
+          const d = ((t.bearing - prev + 540) % 360) - 180;
+          const nb = prev + d * 0.22;
+          smoothBearingRef.current[t.number] = nb;
+          return { ...t, bearing: nb };
+        });
+        if (selectedTrain) {
+          const sb = smoothBearingRef.current[selectedTrain.number] ?? selectedTrain.bearing;
+          selectedTrain = { ...selectedTrain, bearing: sb };
+        }
+
+        // Keep the detail panel live for the tracked/selected train so numbers (speed, next ETA, pax)
+        // visibly update in real time as the eased simulation walks the train along the track.
+        const important = selected || trackTrainRef.current;
+        if (important) {
+          const liveSnap = trains.find((t) => t.number === important) || selectedTrain;
+          if (liveSnap) setDetailSnap(liveSnap);
+        }
       }
 
       frameTickRef.current += 1;
@@ -341,9 +439,8 @@ export default function IndiaMap() {
 
       if (frameTickRef.current % 4 === 0) {
         if (selectedTrain) setDetailSnap(selectedTrain);
-        if (!isLive) {
-          syncLocalSim(simSecRef.current);
-        }
+        // No longer force-syncLocalSim in local: store's useSimLoop owns the sim clock and recompute.
+        // Map just observes latest states from getState() for visual consistency.
       }
     },
     [isLive, trainGeom, trainMeta, mergeOverlayLayers, syncLocalSim]
@@ -386,11 +483,42 @@ export default function IndiaMap() {
       if (isLive) {
         return lastLiveTrainsRef.current.find((t) => t.number === number) ?? null;
       }
+      // Local: prefer the unified store state (eased kinematics) so fly-to + detail matches roster/map
+      const st = useStore.getState();
+      const s = st.states.find((x) => x.number === number);
+      if (s) {
+        const g = st.trainGeom[number];
+        const nt = st.net.trains.find((x: any) => x.number === number);
+        const poly = g?.polyline ?? nt?.polyline ?? [];
+        const cum = g?.cum ?? nt?.polyCumKm ?? [];
+        return {
+          number: s.number,
+          name: s.name,
+          routeStations: nt?.route ?? [],
+          polyline: poly,
+          polyCumKm: cum,
+          position: s.position,
+          bearing: s.bearing,
+          distKm: s.distKm,
+          speedKmh: s.speedKmh,
+          status: s.status as any,
+          delayMinutes: s.delayMinutes,
+          estPassengers: s.estPassengers,
+          nextStation: s.nextStation,
+          prevStation: s.prevStation,
+          etaNextSec: s.etaNextSec,
+          etaFinalSec: s.etaFinalSec ?? 0,
+          active: s.active
+        };
+      }
       const def = findTrainDefinition(number);
-      return def ? computeTrainSnapshot(def, simSecRef.current) : null;
+      return def ? computeTrainSnapshot(def, st.simSec) : null;
     },
     [isLive]
   );
+
+  const resolveSnapshotRef = useRef(resolveSnapshot);
+  resolveSnapshotRef.current = resolveSnapshot;
 
   const selectTrain = useCallback(
     (number: string) => {
@@ -399,6 +527,10 @@ export default function IndiaMap() {
       setSelectedNumber(number);
       setDetailSnap(snap);
       selectTrainStore(number);
+      // One-time fly to the train, then the RAF follow logic below will take over for continuous
+      // "live walking on the map" using the real eased motion along the track.
+      // We deliberately do NOT auto setTrack here (avoids double-fly + effect fights).
+      // Explicit tracking (Roster, future Tracker panel) still sets trackTrain and takes precedence.
       flyToTrain(snap);
       requestAnimationFrame(() => renderFrame(0));
     },
@@ -452,7 +584,42 @@ export default function IndiaMap() {
     });
   }, [deselectTrain, isLive, corridorBounds]);
 
-  const toggle3D = useCallback(() => setIs3D((v) => !v), []);
+  const toggle3D = useCallback(() => {
+    setIs3D((v) => {
+      const next = !v;
+      if (next) {
+        // Entering 3D: zoom right in on a live train so the real rolling-stock model is
+        // big and clearly moving on the track. Prefer the current selection, else a
+        // train that's actually rolling, else any active train. Selecting it also hands
+        // the train to the continuous follow-cam so the view walks with it.
+        const map = mapRef.current;
+        const live = lastLiveTrainsRef.current;
+        let focus = selectedRef.current;
+        if (!focus) {
+          // Prefer the fastest-moving active train so the 3D close-up clearly shows motion.
+          const active = live.filter((t) => t.active);
+          const pick =
+            active.slice().sort((a, b) => (b.speedKmh || 0) - (a.speedKmh || 0))[0] ||
+            live[0];
+          focus = pick?.number ?? null;
+          if (focus) selectTrainRef.current?.(focus);
+        }
+        if (map) {
+          const snap = focus ? live.find((t) => t.number === focus) : null;
+          map.flyTo({
+            center: snap?.position ?? map.getCenter().toArray(),
+            zoom: Math.max(map.getZoom(), 14),
+            pitch: 58,
+            duration: 1400,
+            essential: true
+          });
+        }
+      }
+      // Re-render layers promptly so the real 3D train models (or 2D markers) swap in sync with pitch.
+      requestAnimationFrame(() => renderFrameRef.current?.(0));
+      return next;
+    });
+  }, []);
 
   /** Swap basemap (dark control-room <-> real satellite) and re-attach layers. */
   const toggleSatellite = useCallback(() => {
@@ -461,6 +628,7 @@ export default function IndiaMap() {
     setSatellite((sat) => {
       const next = !sat;
       map.once("style.load", () => {
+        themeMapBackground(map);
         rebuildRailCacheRef.current();
         renderFrameRef.current(0);
       });
@@ -469,9 +637,70 @@ export default function IndiaMap() {
     });
   }, []);
 
+  /** Full-screen "monitor" mode: blow the map (with its HUD + 3D train + controls) up to
+   *  fill the whole screen so the operator can watch one running train. On enter we lock
+   *  onto a moving train (the current selection, else the fastest active) so there's always
+   *  something to monitor. Esc or the button exits. */
+  const toggleFullscreen = useCallback(() => {
+    const root = rootRef.current as
+      | (HTMLDivElement & { webkitRequestFullscreen?: () => Promise<void> })
+      | null;
+    const doc = document as Document & {
+      webkitFullscreenElement?: Element;
+      webkitExitFullscreen?: () => Promise<void>;
+    };
+    if (!root) return;
+    const fsEl = document.fullscreenElement || doc.webkitFullscreenElement;
+    if (!fsEl) {
+      // make sure a running train is being followed before we go full screen
+      if (!selectedRef.current) {
+        const live = lastLiveTrainsRef.current;
+        const pick =
+          live
+            .filter((t) => t.active)
+            .slice()
+            .sort((a, b) => (b.speedKmh || 0) - (a.speedKmh || 0))[0] || live[0];
+        if (pick) selectTrainRef.current?.(pick.number);
+      }
+      (root.requestFullscreen?.() ?? root.webkitRequestFullscreen?.())?.catch?.(() => {});
+    } else {
+      (document.exitFullscreen?.() ?? doc.webkitExitFullscreen?.())?.catch?.(() => {});
+    }
+  }, []);
+
+  // Track fullscreen state and resize the map when it changes size (mapbox needs a nudge).
   useEffect(() => {
-    mapRef.current?.easeTo({ pitch: is3D ? 55 : 0, duration: 800, essential: true });
+    const doc = document as Document & { webkitFullscreenElement?: Element };
+    const onFsChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement || doc.webkitFullscreenElement));
+      // resize across a couple frames so the canvas matches the new container box
+      requestAnimationFrame(() => mapRef.current?.resize());
+      setTimeout(() => mapRef.current?.resize(), 250);
+    };
+    document.addEventListener("fullscreenchange", onFsChange);
+    document.addEventListener("webkitfullscreenchange", onFsChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFsChange);
+      document.removeEventListener("webkitfullscreenchange", onFsChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Leaving 3D → tilt back flat. Entering 3D is handled by toggle3D's flyTo (which
+    // also sets pitch); firing a competing easeTo here would cancel that zoom-in.
+    if (is3D) return;
+    mapRef.current?.easeTo({ pitch: 0, duration: 800, essential: true });
   }, [is3D]);
+
+  // The train-detail card overlays the LEFT of the map. Pad the camera's focal point
+  // to the right while a train is selected so the followed train (which the RAF loop
+  // re-centres each frame via setCenter) stays in the clear part of the map instead of
+  // hiding behind the panel. setPadding is instant, so it never cancels a flyTo.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.setPadding({ left: detailSnap ? 360 : 0, top: 0, right: 0, bottom: 0 });
+  }, [detailSnap, loadedMap]);
 
   // Frame the live corridor as soon as the map style is ready, so the operator
   // lands on the trains — not an empty subcontinent. Polls until the map exists
@@ -573,19 +802,92 @@ export default function IndiaMap() {
       const dt = Math.min(0.05, (now - lastWall) / 1000);
       lastWall = now;
 
-      if (!isLive && playingRef.current) {
+      if (isLive && playingRef.current) {
+        // Live mode: backend drives authoritative simSec; client only extrapolates visuals via interpolator.
         simSecRef.current = clampSimSec(
           simSecRef.current + dt * speedRef.current,
           SIM_MIN_SEC,
           SIM_MAX_SEC
         );
       }
+      // Local mode: the store (useSimLoop + simulationEngine with eased motion) is the single source of truth
+      // for simSec and all TrainState. IndiaMap only renders + bumps frameTick here.
 
       renderFrame(dt);
 
+      // === Continuous camera follow for tracked/selected train: the "live walking on the map" experience ===
+      // Follows explicit trackTrain (Roster / Tracker) OR falls back to whatever is selected.
+      // This makes clicking a train (or roster) cause the view to continuously walk with the real
+      // simulation motion along the actual railway polyline (eased accel/decel, proper bearings).
+      // Uses direct setCenter + light damping for a tight "the train is pulling the map" feel.
+      // Releases on user gestures. Lookahead gives a driving-along-the-rails sensation.
+      const followId = trackTrainRef.current || selectedRef.current;
+      const mapForFollow = mapRef.current;
+      if (followId && mapForFollow) {
+        const nowF = performance.now();
+        const timeSinceGesture = nowF - lastUserGestureRef.current;
+        if (timeSinceGesture > 850 && nowF - lastFollowUpdateRef.current > 28) {
+          lastFollowUpdateRef.current = nowF;
+          const snap = resolveSnapshotRef.current ? resolveSnapshotRef.current(followId) : null;
+          if (snap && snap.position && snap.position.length === 2) {
+            // Speed-aware lookahead along the real track so the camera leads the train a little
+            let targetPos: LngLat = snap.position;
+            const spd = snap.speedKmh || 0;
+            if (spd > 10 && snap.polyline?.length > 1 && snap.polyCumKm?.length > 1) {
+              // Shrink the lookahead as we zoom in, else the lead point pushes the
+              // train off the back of a tight (3D close-up) viewport.
+              const zNow = mapForFollow.getZoom();
+              const leadCap = zNow >= 13 ? 0.35 : zNow >= 11 ? 1.0 : 3.2;
+              const leadKm = Math.min(leadCap, Math.max(0.25, spd * 0.032));
+              const total = snap.polyCumKm[snap.polyCumKm.length - 1] ?? snap.distKm;
+              const dTarget = Math.min(total, snap.distKm + leadKm);
+              const ahead = interpAlong(snap.polyline, snap.polyCumKm, dTarget);
+              targetPos = ahead.pos;
+            }
+            const c = mapForFollow.getCenter();
+            const f = 0.13; // light damping — feels locked to the moving train without being robotic
+            const nx = c.lng + (targetPos[0] - c.lng) * f;
+            const ny = c.lat + (targetPos[1] - c.lat) * f;
+            mapForFollow.setCenter([nx, ny]);
+
+            // Keep the train comfortably visible while it moves on the real geometry
+            const z = mapForFollow.getZoom();
+            if (is3DRef.current) {
+              // 3D mode = close-up "watch the train run" view. Ease the zoom in to ~14
+              // every frame until we get there, so the real rolling-stock model is big
+              // and clearly moving — robust even if another effect tries to zoom back out.
+              if (z < 13.85) mapForFollow.setZoom(Math.min(14, z + 0.18));
+            } else if (z < 7.6) {
+              mapForFollow.setZoom(8.1);
+            }
+          }
+        }
+      }
+
       uiFrame += 1;
       if (uiFrame % 4 === 0) {
-        setSimSecDisplay(isLive ? storeSimSec : simSecRef.current);
+        const fresh = isLive ? storeSimSec : useStore.getState().simSec;
+        setSimSecDisplay(fresh);
+        if (!isLive) simSecRef.current = fresh; // keep ref roughly current for any legacy reads
+
+        // Live "now following" HUD: the tracked/selected train's number + speed, refreshed
+        // a few times a second straight off the same snapshot that drives the map.
+        const fid = trackTrainRef.current || selectedRef.current;
+        if (fid && resolveSnapshotRef.current) {
+          const s = resolveSnapshotRef.current(fid);
+          if (s) {
+            setFollowHud({
+              number: s.number,
+              name: (s as { name?: string }).name,
+              speed: Math.round(s.speedKmh || 0),
+              status: s.status as string
+            });
+          } else {
+            setFollowHud(null);
+          }
+        } else {
+          setFollowHud(null);
+        }
       }
 
       animRafRef.current = requestAnimationFrame(tick);
@@ -600,10 +902,10 @@ export default function IndiaMap() {
       setPlayingStore(!storePlaying);
       return;
     }
-    setPlaying((p) => {
-      playingRef.current = !p;
-      return !p;
-    });
+    // Local: delegate to store so useSimLoop is the single driver (consistent with roster/AI/conflicts)
+    setPlayingStore(!storePlaying);
+    // also keep ref in sync for any live-only bits
+    playingRef.current = !playingRef.current;
   }, [isLive, setPlayingStore, storePlaying]);
 
   const handleSpeed = useCallback(
@@ -612,7 +914,7 @@ export default function IndiaMap() {
         setSpeedStore(s);
         return;
       }
-      setSpeed(s);
+      setSpeedStore(s);
       speedRef.current = s;
     },
     [isLive, setSpeedStore]
@@ -624,12 +926,15 @@ export default function IndiaMap() {
         scrubStore(sec);
         return;
       }
-      simSecRef.current = clampSimSec(sec, SIM_MIN_SEC, SIM_MAX_SEC);
-      setSimSecDisplay(simSecRef.current);
-      syncLocalSim(simSecRef.current);
+      // Delegate to store (single sim time source now)
+      scrubStore(sec);
+      // keep local display ref roughly in sync immediately
+      const clamped = clampSimSec(sec, SIM_MIN_SEC, SIM_MAX_SEC);
+      simSecRef.current = clamped;
+      setSimSecDisplay(clamped);
       renderFrame(0);
     },
-    [isLive, scrubStore, renderFrame, syncLocalSim]
+    [isLive, scrubStore, renderFrame]
   );
 
   useEffect(() => {
@@ -659,8 +964,9 @@ export default function IndiaMap() {
       // forgiving hit area so small station dots + trains are easy to click
       pickingRadius: 16,
       onClick: (info: PickingInfo) => {
-        if (isTrainPick(info)) {
-          selectTrainRef.current(info.object.number);
+        const picked = pickedTrainNumber(info);
+        if (picked) {
+          selectTrainRef.current(picked);
           return true;
         }
         if (isStationPick(info)) {
@@ -672,7 +978,7 @@ export default function IndiaMap() {
         return false;
       },
       onHover: (info: PickingInfo) => {
-        const next = isTrainPick(info) ? info.object.number : null;
+        const next = pickedTrainNumber(info);
         if (hoveredRef.current !== next) {
           hoveredRef.current = next;
           setHoveredNumber(next);
@@ -694,6 +1000,7 @@ export default function IndiaMap() {
       if (ready || mapRef.current !== map) return;
       ready = true;
       window.clearTimeout(readyTimer);
+      themeMapBackground(map);
       map.addControl(overlay);
       frameInitialViewRef.current(map);
       rebuildRailCacheRef.current();
@@ -713,14 +1020,39 @@ export default function IndiaMap() {
       renderFrameRef.current(0);
     });
 
+    // User gestures temporarily pause the automatic camera follow so the judge can
+    // freely explore, then it gracefully resumes following the selected train.
+    const markGesture = () => { lastUserGestureRef.current = performance.now(); };
+    map.on("dragstart", markGesture);
+    map.on("zoomstart", markGesture);
+    map.on("rotatestart", markGesture);
+    map.on("pitchstart", markGesture);
+    map.on("touchstart", markGesture);
+
     map.on("error", (ev) => {
       const err = (ev as mapboxgl.ErrorEvent & { error?: Error }).error ?? ev;
       if (isAbortError(err) || isBenignMapNetworkError(err)) return;
       console.warn("[Mapbox]", err);
     });
 
+    // Resize the map whenever its CONTAINER box changes — not just the window.
+    // This is what keeps full-screen correct: entering element-fullscreen does NOT
+    // fire a window 'resize' (so Mapbox's built-in trackResize never runs), leaving the
+    // canvas at its old small size while displayed huge. The basemap and the deck.gl
+    // train/track layers then drift apart, so on Mumbai's thin coastal strip the trains
+    // appeared to slide off into the sea / float in the air. A ResizeObserver fixes every
+    // size change (fullscreen, side panels, window) with one mechanism.
+    let resizeRaf = 0;
+    const resizeObserver = new ResizeObserver(() => {
+      if (resizeRaf) cancelAnimationFrame(resizeRaf);
+      resizeRaf = requestAnimationFrame(() => mapRef.current?.resize());
+    });
+    resizeObserver.observe(el);
+
     return () => {
       window.clearTimeout(readyTimer);
+      if (resizeRaf) cancelAnimationFrame(resizeRaf);
+      resizeObserver.disconnect();
       if (moveRafRef.current) cancelAnimationFrame(moveRafRef.current);
       if (animRafRef.current) cancelAnimationFrame(animRafRef.current);
       const ov = overlayRef.current;
@@ -773,7 +1105,7 @@ export default function IndiaMap() {
   const clockSpeed = isLive ? (storeSpeed as SimSpeedPreset) : speed;
 
   return (
-    <>
+    <div ref={rootRef} className="absolute inset-0 bg-base">
       <div ref={containerRef} className="absolute inset-0 india-map" aria-label="India map" />
       <button
         type="button"
@@ -805,12 +1137,43 @@ export default function IndiaMap() {
       >
         SAT
       </button>
+      <button
+        type="button"
+        onClick={toggleFullscreen}
+        title={isFullscreen ? "Exit full screen (Esc)" : "Full-screen monitor of the running train"}
+        className={`absolute top-[122px] left-4 z-10 panel bg-panel/95 backdrop-blur px-3 py-1.5 text-xs font-semibold border transition-colors ${
+          isFullscreen
+            ? "text-cyan border-cyan/60 bg-cyan/10"
+            : "text-muted border-white/20 hover:border-cyan/40 hover:text-cyan"
+        }`}
+      >
+        {isFullscreen ? "⤡ Exit" : "⛶ Full"}
+      </button>
       <TrainSearch
         trains={searchDefs}
         onSelect={(t) => selectTrain(t.number)}
       />
       <MapLegend />
       <DemoCaption />
+      {followHud && (
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10 panel bg-panel/95 backdrop-blur px-3.5 py-2 flex items-center gap-2.5 text-xs border border-border shadow-lg pointer-events-none">
+          <span className="text-[10px] uppercase tracking-widest text-muted">Following</span>
+          <span
+            className="inline-block w-2.5 h-2.5 rounded-full"
+            style={{
+              backgroundColor: HUD_STATUS_COLOR[followHud.status] ?? "#37D99A",
+              animation: followHud.speed > 2 ? "pulseRisk 1.1s ease-in-out infinite" : undefined
+            }}
+          />
+          <span className="font-mono font-bold text-text tracking-wider">{followHud.number}</span>
+          {followHud.name && (
+            <span className="text-muted max-w-[180px] truncate">{followHud.name}</span>
+          )}
+          <span className="font-mono text-cyan tabular-nums">
+            {followHud.speed > 2 ? `${followHud.speed} km/h` : "stopped"}
+          </span>
+        </div>
+      )}
       {selectedNumber && detailSnap && (
         <TrainDetailPanel
           trainNumber={selectedNumber}
@@ -833,6 +1196,6 @@ export default function IndiaMap() {
         onSpeed={handleSpeed}
         onScrub={handleScrub}
       />
-    </>
+    </div>
   );
 }

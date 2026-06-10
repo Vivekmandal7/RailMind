@@ -1,4 +1,10 @@
 import { interpAlong } from "./geo";
+import {
+  distanceAtEffectiveTime,
+  speedAtEffectiveTime,
+  etaAtDistance,
+  type ScheduleStop
+} from "./trainMotion";
 import type {
   Conflict,
   ConflictType,
@@ -17,54 +23,29 @@ export interface EngineParams {
   speedFactor: number; // <1 means slower (fog). Adds proportional delay.
 }
 
-interface StopPoint {
-  dist: number;
-  arr: number;
-  dep: number;
-}
-
-/** Map a train's sparse schedule stops onto cumulative route distance. */
-function stopPoints(train: Train): StopPoint[] {
+/** Map a train's sparse schedule stops onto cumulative route distance (for easing fns). */
+function toScheduleStops(train: Train): ScheduleStop[] {
   const idxOf: Record<string, number> = {};
   train.route.forEach((c, i) => (idxOf[c] = i));
   return train.schedule.map((s) => ({
-    dist: train.cumDistKm[idxOf[s.station]],
+    station: s.station,
+    dist: train.cumDistKm[idxOf[s.station]] ?? 0,
     arr: s.arr,
     dep: s.dep
   }));
 }
 
-/** Distance (km) travelled at an effective (delay-removed) schedule time. */
-function distanceAtTime(stops: StopPoint[], te: number): number {
-  if (te <= stops[0].dep) return stops[0].dist;
-  const last = stops[stops.length - 1];
-  if (te >= last.arr) return last.dist;
-  for (let i = 0; i < stops.length - 1; i++) {
-    const a = stops[i];
-    const b = stops[i + 1];
-    if (te >= a.arr && te <= a.dep) return a.dist; // dwell
-    if (te > a.dep && te < b.arr) {
-      const t = (te - a.dep) / (b.arr - a.dep);
-      return a.dist + (b.dist - a.dist) * t;
-    }
-  }
-  return last.dist;
+/** Distance (km) travelled at an effective (delay-removed) schedule time — eased accel/decel. */
+function distanceAtTime(stops: ScheduleStop[], te: number): number {
+  if (!stops.length) return 0;
+  return distanceAtEffectiveTime(stops, te);
 }
 
-/** Effective scheduled time at which the train reaches distance d (inverse). */
-function timeAtDistance(stops: StopPoint[], d: number): number {
-  if (d <= stops[0].dist) return stops[0].dep;
-  const last = stops[stops.length - 1];
-  if (d >= last.dist) return last.arr;
-  for (let i = 0; i < stops.length - 1; i++) {
-    const a = stops[i];
-    const b = stops[i + 1];
-    if (d >= a.dist && d <= b.dist) {
-      const frac = (d - a.dist) / (b.dist - a.dist || 1);
-      return a.dep + (b.arr - a.dep) * frac;
-    }
-  }
-  return last.arr;
+/** Effective scheduled time at which the train reaches distance d (inverse of eased curve). */
+function timeAtDistance(stops: ScheduleStop[], d: number): number {
+  if (!stops.length) return 0;
+  const t = etaAtDistance(stops, d);
+  return t ?? stops[stops.length - 1].arr;
 }
 
 function loadFactor(train: Train): number {
@@ -82,10 +63,10 @@ export function computeTrainState(
   train: Train,
   p: EngineParams
 ): TrainState {
-  const stops = stopPoints(train);
+  const stops = toScheduleStops(train);
   const delaySec = (p.delaysSec[train.number] ?? 0) + fogDelay(train, p);
-  const startSec = stops[0].dep + delaySec;
-  const endSec = stops[stops.length - 1].arr + delaySec;
+  const startSec = stops[0]?.dep + delaySec || 0;
+  const endSec = stops[stops.length - 1]?.arr + delaySec || 0;
 
   const te = p.simSec - delaySec; // effective schedule time
   let distKm: number;
@@ -98,17 +79,16 @@ export function computeTrainState(
     distKm = distanceAtTime(stops, te);
   }
 
-  const totalKm = train.cumDistKm[train.cumDistKm.length - 1];
+  const totalKm = train.cumDistKm[train.cumDistKm.length - 1] ?? 0;
   const active = p.simSec >= startSec && (isFrozen || distKm < totalKm - 0.001 || p.simSec < endSec);
   const arrived = !isFrozen && p.simSec >= endSec;
 
   const { pos, bearing } = interpAlong(train.polyline, train.polyCumKm, distKm);
 
-  // speed from finite difference of distance over a small effective window
+  // realistic speed from derivative of the smootherstep curve
   let speedKmh = 0;
   if (!isFrozen && active && !arrived) {
-    const d2 = distanceAtTime(stops, te + 20);
-    speedKmh = Math.max(0, ((d2 - distKm) / 20) * 3600);
+    speedKmh = speedAtEffectiveTime(stops, te);
   }
 
   // next / prev route station relative to current distance
@@ -145,7 +125,11 @@ export function computeTrainState(
   const etaFinalSec = endSec;
   const etaNextSec =
     nextStation != null
-      ? timeAtDistance(stops, train.cumDistKm[train.route.indexOf(nextStation)]) + delaySec
+      ? (() => {
+          const dNext = train.cumDistKm[train.route.indexOf(nextStation)] ?? distKm;
+          const et = etaAtDistance(stops, dNext);
+          return et != null ? et + delaySec : null;
+        })()
       : null;
 
   return {
@@ -172,8 +156,8 @@ export function computeTrainState(
 function fogDelay(train: Train, p: EngineParams): number {
   if (p.speedFactor >= 1) return 0;
   // slower running adds time proportional to remaining distance share already covered
-  const stops = stopPoints(train);
-  const journeySec = stops[stops.length - 1].arr - stops[0].dep;
+  const stops = toScheduleStops(train);
+  const journeySec = (stops[stops.length - 1]?.arr ?? 0) - (stops[0]?.dep ?? 0);
   const extra = journeySec * (1 / p.speedFactor - 1) * 0.5;
   return extra;
 }
@@ -215,10 +199,10 @@ export function detectConflicts(net: NetworkData, p: EngineParams): Conflict[] {
     const staOcc: Record<string, string[]> = {};
 
     for (const train of net.trains) {
-      const stops = stopPoints(train);
+      const stops = toScheduleStops(train);
       const delaySec = (p.delaysSec[train.number] ?? 0) + fogDelay(train, fp);
-      const startSec = stops[0].dep + delaySec;
-      const endSec = stops[stops.length - 1].arr + delaySec;
+      const startSec = (stops[0]?.dep ?? 0) + delaySec;
+      const endSec = (stops[stops.length - 1]?.arr ?? 0) + delaySec;
       if (at < startSec || at > endSec) {
         if (p.frozen[train.number] === undefined) continue;
       }

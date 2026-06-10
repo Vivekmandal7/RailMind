@@ -16,6 +16,7 @@ export interface TrainMeta {
 interface RenderedTrain {
   distKm: number;
   bearing: number;
+  lastSpeedKmh: number;
   initialized: boolean;
 }
 
@@ -96,6 +97,7 @@ export class TwinInterpolator {
         this.rendered.set(t.number, {
           distKm: t.distKm,
           bearing: t.bearing,
+          lastSpeedKmh: t.speedKmh,
           initialized: true
         });
       }
@@ -127,27 +129,41 @@ export class TwinInterpolator {
       const total = g.cum[g.cum.length - 1] ?? 0;
       if (!t.active) continue;
 
-      let targetDist = Math.max(0, Math.min(total, t.distKm));
+      // Authoritative target at this instant (backend eased position + short age extrapolation)
+      let authTarget = Math.max(0, Math.min(total, t.distKm));
       if (t.speedKmh > 0.5 && snapAgeSec > 0) {
-        targetDist = Math.min(
-          total,
-          targetDist + (t.speedKmh * snapAgeSec) / 3600
-        );
+        authTarget = Math.min(total, authTarget + (t.speedKmh * snapAgeSec) / 3600);
       }
 
       let r = this.rendered.get(t.number);
       if (!r) {
-        r = { distKm: targetDist, bearing: t.bearing, initialized: true };
+        r = { distKm: authTarget, bearing: t.bearing, lastSpeedKmh: t.speedKmh, initialized: true };
         this.rendered.set(t.number, r);
       }
 
-      const k = Math.min(1, dtReal * 10);
-      r.distKm += (targetDist - r.distKm) * k;
+      // Inertial walk + soft correction: integrate using last visual speed for "live" feel,
+      // then pull toward the (age-corrected) backend target. This hides WS tick gaps without
+      // the trains looking like they are rubber-banding or stuck.
+      const dtHours = Math.max(0, dtReal) / 3600;
+      const carry = (r.lastSpeedKmh || t.speedKmh) * dtHours;
+      let next = r.distKm + carry;
+
+      const catchK = Math.min(1, dtReal * 9 + 0.02); // responsive but not twitchy
+      next += (authTarget - next) * catchK;
+
+      // clamp and store
+      r.distKm = Math.max(0, Math.min(total, next));
+
+      // visual speed for this frame (for trail length + provenance)
+      const visualSpeed = Math.max(0, ((r.distKm - (r.distKm - carry)) / Math.max(1e-6, dtHours)) / 3600 || t.speedKmh);
+      r.lastSpeedKmh = t.speedKmh * 0.6 + visualSpeed * 0.4; // blend toward reported for stability
 
       const { pos, bearing } = interpAlong(g.polyline, g.cum, r.distKm);
-      r.bearing = lerpAngle(r.bearing, bearing, Math.min(1, dtReal * 12));
+      r.bearing = lerpAngle(r.bearing, bearing, Math.min(1, dtReal * 14));
 
       const snap = liveStateToSnapshot(t, m, pos, r.bearing, r.distKm);
+      // forward the (blended) speed so trails and pulses react to motion
+      snap.speedKmh = r.lastSpeedKmh;
       snap.polyline = g.polyline;
       snap.polyCumKm = g.cum;
       out.push(snap);

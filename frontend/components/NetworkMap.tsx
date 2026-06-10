@@ -25,9 +25,16 @@ const MAJOR_STATIONS = new Set([
 ]);
 
 const TRAIN_SVG = encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="84" viewBox="0 0 40 84">
-    <path d="M20 2 C30 2 35 11 35 24 L35 66 C35 78 29 82 20 82 C11 82 5 78 5 66 L5 24 C5 11 10 2 20 2 Z" fill="white"/>
-    <rect x="11" y="9" width="18" height="7" rx="3" fill="white" opacity="0.55"/>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="72" viewBox="0 0 36 72">
+    <rect x="4" y="10" width="28" height="52" rx="3" fill="#0f2942"/>
+    <polygon points="4,10 18,3 32,10" fill="#1a3a52"/>
+    <rect x="4" y="18" width="28" height="3" fill="#f4a261" opacity="0.9"/>
+    <rect x="6" y="24" width="24" height="3" rx="1" fill="#0a1624"/>
+    <rect x="6" y="30" width="24" height="3" rx="1" fill="#0a1624"/>
+    <rect x="6" y="36" width="24" height="3" rx="1" fill="#0a1624"/>
+    <rect x="6" y="42" width="24" height="3" rx="1" fill="#0a1624"/>
+    <rect x="4" y="62" width="28" height="5" rx="2" fill="#0f2942"/>
+    <polygon points="18,3 14,9 22,9" fill="#f4a261" opacity="0.7"/>
   </svg>`
 );
 const TRAIN_ICON = {
