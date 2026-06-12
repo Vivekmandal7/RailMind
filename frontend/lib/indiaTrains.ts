@@ -45,6 +45,8 @@ export interface TrainSnapshot {
   etaNextSec: number | null;
   etaFinalSec: number;
   active: boolean;
+  /** Provenance of the position (live NTES report vs schedule-modeled). */
+  source?: "live" | "interpolated" | "predicted" | "sim";
 }
 
 /** @deprecated alias kept for Phase 3 consumers */
@@ -77,6 +79,47 @@ function buildSectionLookup(): Record<string, SectionLookup> {
   return out;
 }
 
+/** Station-graph BFS so a hop with no direct section (express skipping
+ *  stations) expands through intermediate sections instead of a straight
+ *  line off the railway. Returns the station codes from `frm` to `to`
+ *  inclusive, or null when the graph doesn't connect them. */
+function expandHop(
+  frm: string,
+  to: string,
+  sections: Record<string, SectionLookup>
+): string[] | null {
+  if (sections[sectionKey(frm, to)]) return [frm, to];
+  const adj: Record<string, string[]> = {};
+  for (const key of Object.keys(sections)) {
+    const [a, b] = key.split("-");
+    if (!a || !b) continue;
+    (adj[a] ??= []).push(b);
+  }
+  const prev: Record<string, string> = {};
+  const queue = [frm];
+  const seen = new Set([frm]);
+  while (queue.length) {
+    const u = queue.shift()!;
+    if (u === to) {
+      const path = [to];
+      let cur = to;
+      while (cur !== frm) {
+        cur = prev[cur];
+        path.push(cur);
+      }
+      return path.reverse();
+    }
+    for (const v of adj[u] ?? []) {
+      if (!seen.has(v)) {
+        seen.add(v);
+        prev[v] = u;
+        queue.push(v);
+      }
+    }
+  }
+  return null;
+}
+
 function stitchRoutePolyline(
   route: string[],
   sections: Record<string, SectionLookup>,
@@ -98,8 +141,8 @@ function stitchRoutePolyline(
     }
 
     const prev = route[i - 1];
-    const sec = sections[sectionKey(prev, code)];
-    if (!sec) {
+    const hops = expandHop(prev, code, sections);
+    if (!hops) {
       const prevPt = polyline[polyline.length - 1];
       polyline.push([st.lng, st.lat]);
       runningKm += haversineKm(prevPt, [st.lng, st.lat]);
@@ -107,19 +150,23 @@ function stitchRoutePolyline(
       continue;
     }
 
-    let geom = sec.geometry;
-    if (geom.length === 0) {
-      polyline.push([st.lng, st.lat]);
-      continue;
+    for (let h = 1; h < hops.length; h++) {
+      const sec = sections[sectionKey(hops[h - 1], hops[h])];
+      if (!sec || sec.geometry.length === 0) {
+        const hopSt = stationMap[hops[h]];
+        if (hopSt) polyline.push([hopSt.lng, hopSt.lat]);
+        continue;
+      }
+      let geom = sec.geometry;
+      const prevSt = stationMap[hops[h - 1]];
+      if (prevSt) {
+        const d0 = haversineKm([prevSt.lng, prevSt.lat], geom[0]);
+        const d1 = haversineKm([prevSt.lng, prevSt.lat], geom[geom.length - 1]);
+        if (d1 < d0) geom = [...geom].reverse();
+      }
+      for (let j = 1; j < geom.length; j++) polyline.push(geom[j]);
+      runningKm += sec.lengthKm;
     }
-
-    const prevSt = stationMap[prev];
-    const d0 = haversineKm([prevSt.lng, prevSt.lat], geom[0]);
-    const d1 = haversineKm([prevSt.lng, prevSt.lat], geom[geom.length - 1]);
-    if (d1 < d0) geom = [...geom].reverse();
-
-    for (let j = 1; j < geom.length; j++) polyline.push(geom[j]);
-    runningKm += sec.lengthKm;
     routeCumKm[i] = runningKm;
   }
 

@@ -41,10 +41,16 @@ export function interpAlong(
       pos: coords[coords.length - 1],
       bearing: bearingBetween(coords[coords.length - 2] ?? coords[0], coords[coords.length - 1])
     };
-  // binary-ish linear search
-  let i = 1;
-  while (i < cum.length && cum[i] < d) i++;
-  const segStart = cum[i - 1];
+  // binary search for the segment containing d (cum is monotonic)
+  let lo = 0;
+  let hi = cum.length - 1;
+  while (lo < hi - 1) {
+    const mid = (lo + hi) >> 1;
+    if (cum[mid] <= d) lo = mid;
+    else hi = mid;
+  }
+  const i = lo + 1;
+  const segStart = cum[lo];
   const segEnd = cum[i];
   const t = segEnd === segStart ? 0 : (d - segStart) / (segEnd - segStart);
   const a = coords[i - 1];

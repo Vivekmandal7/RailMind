@@ -21,6 +21,9 @@ __pycache__/
 .pytest_cache/
 *.egg-info/
 
+# Overpass raw-response cache (one-time geometry builds, ~140 MB)
+backend/scripts/.overpass_cache/
+
 # OS / editor
 .DS_Store
 *.sw.bak

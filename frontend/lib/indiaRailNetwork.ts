@@ -1,5 +1,6 @@
 import indiaStationsGeo from "@/data/india_stations.geojson";
 import indiaSectionsGeo from "@/data/india_sections.geojson";
+import { lodForZoom } from "./geometryLod";
 
 export type LngLat = [number, number];
 
@@ -104,14 +105,7 @@ export function routeInBounds(route: RailRoute, b: ViewBounds): boolean {
   return route.geometry.some(([lng, lat]) => pointInBounds(lng, lat, b));
 }
 
-/** Decimate polyline vertices for low zoom (every nth point). */
+/** Decimate polyline vertices for low zoom — memoized tiered LOD. */
 export function simplifyRoute(geometry: LngLat[], zoom: number): LngLat[] {
-  if (geometry.length <= 2) return geometry;
-  if (zoom >= 7) return geometry;
-  const step = zoom < 4 ? 4 : zoom < 5 ? 3 : zoom < 6 ? 2 : 1;
-  if (step <= 1) return geometry;
-  const out: LngLat[] = [geometry[0]];
-  for (let i = step; i < geometry.length - 1; i += step) out.push(geometry[i]);
-  out.push(geometry[geometry.length - 1]);
-  return out;
+  return lodForZoom(geometry, zoom);
 }

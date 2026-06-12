@@ -89,8 +89,44 @@ class GeoJSONDataSource(DataSource):
         return trains
 
     @staticmethod
+    def _hop_sections(
+        frm: str, to: str, sections: dict[str, Section]
+    ) -> list[Section] | None:
+        """Sections covering one timetable hop, in travel order.
+
+        Express routes can hop over stations that have no direct section
+        (e.g. CSMT→DR skipping BY) — BFS the station/section graph so the
+        train still follows real track instead of a straight-line shortcut.
+        """
+        direct = sections.get(f"{frm}-{to}") or sections.get(f"{to}-{frm}")
+        if direct is not None:
+            return [direct]
+        adj: dict[str, list[tuple[str, Section]]] = {}
+        for sec in sections.values():
+            adj.setdefault(sec.frm, []).append((sec.to, sec))
+            adj.setdefault(sec.to, []).append((sec.frm, sec))
+        prev_hop: dict[str, tuple[str, Section]] = {}
+        queue = [frm]
+        seen = {frm}
+        while queue:
+            u = queue.pop(0)
+            if u == to:
+                chain: list[Section] = []
+                while u != frm:
+                    p, sec = prev_hop[u]
+                    chain.append(sec)
+                    u = p
+                return chain[::-1]
+            for v, sec in adj.get(u, []):
+                if v not in seen:
+                    seen.add(v)
+                    prev_hop[v] = (u, sec)
+                    queue.append(v)
+        return None
+
+    @classmethod
     def _build_polyline(
-        route: list[str], stations: dict[str, Station], sections: dict[str, Section]
+        cls, route: list[str], stations: dict[str, Station], sections: dict[str, Section]
     ) -> tuple[list[tuple[float, float]], list[float]]:
         polyline: list[tuple[float, float]] = []
         cum_dist: list[float] = []
@@ -102,14 +138,17 @@ class GeoJSONDataSource(DataSource):
                 polyline.append((st.lng, st.lat))
                 continue
             prev = route[i - 1]
-            sec = sections.get(f"{prev}-{code}") or sections.get(f"{code}-{prev}")
-            if sec is None:
+            chain = cls._hop_sections(prev, code, sections)
+            if not chain:
                 st = stations[code]
                 polyline.append((st.lng, st.lat))
                 continue
-            geom = sec.geometry if sec.frm == prev else list(reversed(sec.geometry))
-            for v in geom[1:]:
-                polyline.append(v)
-            running += sec.length_km
+            at = prev
+            for sec in chain:
+                geom = sec.geometry if sec.frm == at else list(reversed(sec.geometry))
+                for v in geom[1:]:
+                    polyline.append(v)
+                running += sec.length_km
+                at = sec.to if sec.frm == at else sec.frm
             cum_dist[-1] = running
         return polyline, cum_dist

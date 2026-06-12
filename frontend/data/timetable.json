@@ -9,14 +9,60 @@
       "direction": "UP",
       "coaches": 22,
       "capacityPax": 1500,
-      "route": ["CSMT", "BY", "DR", "CLA", "GC", "BND", "MLND", "TNA", "MBQ", "DIVA", "DI", "KYN", "SHAD", "TLA", "KDV", "VSD", "ASO", "ATG", "KHDI", "KSRA", "IGP"],
+      "route": [
+        "CSMT",
+        "BY",
+        "DR",
+        "CLA",
+        "GC",
+        "BND",
+        "MLND",
+        "TNA",
+        "MBQ",
+        "DIVA",
+        "DI",
+        "KYN",
+        "SHAD",
+        "TLA",
+        "KDV",
+        "VSD",
+        "ASO",
+        "ATG",
+        "KHDI",
+        "KSRA",
+        "IGP"
+      ],
       "schedule": [
-        { "station": "CSMT", "arr": "08:00", "dep": "08:00" },
-        { "station": "DR", "arr": "08:12", "dep": "08:14" },
-        { "station": "TNA", "arr": "08:35", "dep": "08:37" },
-        { "station": "KYN", "arr": "08:55", "dep": "08:58" },
-        { "station": "KSRA", "arr": "10:05", "dep": "10:08" },
-        { "station": "IGP", "arr": "10:45", "dep": "10:50" }
+        {
+          "station": "CSMT",
+          "arr": "08:00",
+          "dep": "08:00"
+        },
+        {
+          "station": "DR",
+          "arr": "08:12",
+          "dep": "08:14"
+        },
+        {
+          "station": "TNA",
+          "arr": "08:35",
+          "dep": "08:37"
+        },
+        {
+          "station": "KYN",
+          "arr": "08:55",
+          "dep": "08:58"
+        },
+        {
+          "station": "KSRA",
+          "arr": "10:05",
+          "dep": "10:08"
+        },
+        {
+          "station": "IGP",
+          "arr": "10:45",
+          "dep": "10:50"
+        }
       ]
     },
     {
@@ -26,14 +72,60 @@
       "direction": "UP",
       "coaches": 20,
       "capacityPax": 1350,
-      "route": ["CSMT", "BY", "DR", "CLA", "GC", "BND", "MLND", "TNA", "MBQ", "DIVA", "DI", "KYN", "SHAD", "TLA", "KDV", "VSD", "ASO", "ATG", "KHDI", "KSRA", "IGP"],
+      "route": [
+        "CSMT",
+        "BY",
+        "DR",
+        "CLA",
+        "GC",
+        "BND",
+        "MLND",
+        "TNA",
+        "MBQ",
+        "DIVA",
+        "DI",
+        "KYN",
+        "SHAD",
+        "TLA",
+        "KDV",
+        "VSD",
+        "ASO",
+        "ATG",
+        "KHDI",
+        "KSRA",
+        "IGP"
+      ],
       "schedule": [
-        { "station": "CSMT", "arr": "08:20", "dep": "08:20" },
-        { "station": "DR", "arr": "08:33", "dep": "08:35" },
-        { "station": "TNA", "arr": "08:55", "dep": "08:57" },
-        { "station": "KYN", "arr": "09:18", "dep": "09:20" },
-        { "station": "KSRA", "arr": "10:30", "dep": "10:33" },
-        { "station": "IGP", "arr": "11:08", "dep": "11:12" }
+        {
+          "station": "CSMT",
+          "arr": "08:20",
+          "dep": "08:20"
+        },
+        {
+          "station": "DR",
+          "arr": "08:33",
+          "dep": "08:35"
+        },
+        {
+          "station": "TNA",
+          "arr": "08:55",
+          "dep": "08:57"
+        },
+        {
+          "station": "KYN",
+          "arr": "09:18",
+          "dep": "09:20"
+        },
+        {
+          "station": "KSRA",
+          "arr": "10:30",
+          "dep": "10:33"
+        },
+        {
+          "station": "IGP",
+          "arr": "11:08",
+          "dep": "11:12"
+        }
       ]
     },
     {
@@ -43,13 +135,54 @@
       "direction": "UP",
       "coaches": 24,
       "capacityPax": 1600,
-      "route": ["CSMT", "DR", "CLA", "GC", "BND", "MLND", "TNA", "MBQ", "DIVA", "DI", "KYN", "SHAD", "TLA", "KDV", "VSD", "ASO", "ATG", "KHDI", "KSRA", "IGP"],
+      "route": [
+        "CSMT",
+        "DR",
+        "CLA",
+        "GC",
+        "BND",
+        "MLND",
+        "TNA",
+        "MBQ",
+        "DIVA",
+        "DI",
+        "KYN",
+        "SHAD",
+        "TLA",
+        "KDV",
+        "VSD",
+        "ASO",
+        "ATG",
+        "KHDI",
+        "KSRA",
+        "IGP"
+      ],
       "schedule": [
-        { "station": "CSMT", "arr": "08:40", "dep": "08:40" },
-        { "station": "TNA", "arr": "09:10", "dep": "09:12" },
-        { "station": "KYN", "arr": "09:30", "dep": "09:32" },
-        { "station": "KSRA", "arr": "10:40", "dep": "10:42" },
-        { "station": "IGP", "arr": "11:18", "dep": "11:22" }
+        {
+          "station": "CSMT",
+          "arr": "08:40",
+          "dep": "08:40"
+        },
+        {
+          "station": "TNA",
+          "arr": "09:10",
+          "dep": "09:12"
+        },
+        {
+          "station": "KYN",
+          "arr": "09:30",
+          "dep": "09:32"
+        },
+        {
+          "station": "KSRA",
+          "arr": "10:40",
+          "dep": "10:42"
+        },
+        {
+          "station": "IGP",
+          "arr": "11:18",
+          "dep": "11:22"
+        }
       ]
     },
     {
@@ -59,13 +192,55 @@
       "direction": "DOWN",
       "coaches": 22,
       "capacityPax": 1500,
-      "route": ["IGP", "KSRA", "KHDI", "ATG", "ASO", "VSD", "KDV", "TLA", "SHAD", "KYN", "DI", "DIVA", "MBQ", "TNA", "MLND", "BND", "GC", "CLA", "DR", "BY", "CSMT"],
+      "route": [
+        "IGP",
+        "KSRA",
+        "KHDI",
+        "ATG",
+        "ASO",
+        "VSD",
+        "KDV",
+        "TLA",
+        "SHAD",
+        "KYN",
+        "DI",
+        "DIVA",
+        "MBQ",
+        "TNA",
+        "MLND",
+        "BND",
+        "GC",
+        "CLA",
+        "DR",
+        "BY",
+        "CSMT"
+      ],
       "schedule": [
-        { "station": "IGP", "arr": "10:15", "dep": "10:15" },
-        { "station": "KSRA", "arr": "10:50", "dep": "10:53" },
-        { "station": "KYN", "arr": "11:25", "dep": "11:28" },
-        { "station": "TNA", "arr": "11:50", "dep": "11:52" },
-        { "station": "CSMT", "arr": "12:25", "dep": "12:25" }
+        {
+          "station": "IGP",
+          "arr": "10:15",
+          "dep": "10:15"
+        },
+        {
+          "station": "KSRA",
+          "arr": "10:50",
+          "dep": "10:53"
+        },
+        {
+          "station": "KYN",
+          "arr": "11:25",
+          "dep": "11:28"
+        },
+        {
+          "station": "TNA",
+          "arr": "11:50",
+          "dep": "11:52"
+        },
+        {
+          "station": "CSMT",
+          "arr": "12:25",
+          "dep": "12:25"
+        }
       ]
     },
     {
@@ -75,13 +250,54 @@
       "direction": "UP",
       "coaches": 21,
       "capacityPax": 1450,
-      "route": ["CSMT", "DR", "CLA", "GC", "BND", "MLND", "TNA", "MBQ", "DIVA", "DI", "KYN", "SHAD", "TLA", "KDV", "VSD", "ASO", "ATG", "KHDI", "KSRA", "IGP"],
+      "route": [
+        "CSMT",
+        "DR",
+        "CLA",
+        "GC",
+        "BND",
+        "MLND",
+        "TNA",
+        "MBQ",
+        "DIVA",
+        "DI",
+        "KYN",
+        "SHAD",
+        "TLA",
+        "KDV",
+        "VSD",
+        "ASO",
+        "ATG",
+        "KHDI",
+        "KSRA",
+        "IGP"
+      ],
       "schedule": [
-        { "station": "CSMT", "arr": "09:00", "dep": "09:00" },
-        { "station": "DR", "arr": "09:13", "dep": "09:15" },
-        { "station": "KYN", "arr": "09:50", "dep": "09:53" },
-        { "station": "KSRA", "arr": "11:00", "dep": "11:03" },
-        { "station": "IGP", "arr": "11:40", "dep": "11:45" }
+        {
+          "station": "CSMT",
+          "arr": "09:00",
+          "dep": "09:00"
+        },
+        {
+          "station": "DR",
+          "arr": "09:13",
+          "dep": "09:15"
+        },
+        {
+          "station": "KYN",
+          "arr": "09:50",
+          "dep": "09:53"
+        },
+        {
+          "station": "KSRA",
+          "arr": "11:00",
+          "dep": "11:03"
+        },
+        {
+          "station": "IGP",
+          "arr": "11:40",
+          "dep": "11:45"
+        }
       ]
     },
     {
@@ -91,16 +307,69 @@
       "direction": "UP",
       "coaches": 12,
       "capacityPax": 2600,
-      "route": ["CSMT", "BY", "DR", "CLA", "GC", "BND", "MLND", "TNA", "MBQ", "DIVA", "DI", "KYN", "SHAD", "TLA", "KDV", "VSD", "ASO", "ATG", "KHDI", "KSRA"],
+      "route": [
+        "CSMT",
+        "BY",
+        "DR",
+        "CLA",
+        "GC",
+        "BND",
+        "MLND",
+        "TNA",
+        "MBQ",
+        "DIVA",
+        "DI",
+        "KYN",
+        "SHAD",
+        "TLA",
+        "KDV",
+        "VSD",
+        "ASO",
+        "ATG",
+        "KHDI",
+        "KSRA"
+      ],
       "schedule": [
-        { "station": "CSMT", "arr": "08:10", "dep": "08:10" },
-        { "station": "DR", "arr": "08:25", "dep": "08:26" },
-        { "station": "CLA", "arr": "08:33", "dep": "08:34" },
-        { "station": "TNA", "arr": "09:00", "dep": "09:01" },
-        { "station": "KYN", "arr": "09:25", "dep": "09:27" },
-        { "station": "TLA", "arr": "09:45", "dep": "09:46" },
-        { "station": "ASO", "arr": "10:05", "dep": "10:06" },
-        { "station": "KSRA", "arr": "10:40", "dep": "10:40" }
+        {
+          "station": "CSMT",
+          "arr": "08:10",
+          "dep": "08:10"
+        },
+        {
+          "station": "DR",
+          "arr": "08:25",
+          "dep": "08:26"
+        },
+        {
+          "station": "CLA",
+          "arr": "08:33",
+          "dep": "08:34"
+        },
+        {
+          "station": "TNA",
+          "arr": "09:00",
+          "dep": "09:01"
+        },
+        {
+          "station": "KYN",
+          "arr": "09:25",
+          "dep": "09:27"
+        },
+        {
+          "station": "TLA",
+          "arr": "09:45",
+          "dep": "09:46"
+        },
+        {
+          "station": "ASO",
+          "arr": "10:05",
+          "dep": "10:06"
+        },
+        {
+          "station": "KSRA",
+          "arr": "10:40",
+          "dep": "10:40"
+        }
       ]
     },
     {
@@ -110,12 +379,38 @@
       "direction": "DOWN",
       "coaches": 12,
       "capacityPax": 2600,
-      "route": ["KSRA", "KHDI", "ATG", "ASO", "VSD", "KDV", "TLA", "SHAD", "KYN"],
+      "route": [
+        "KSRA",
+        "KHDI",
+        "ATG",
+        "ASO",
+        "VSD",
+        "KDV",
+        "TLA",
+        "SHAD",
+        "KYN"
+      ],
       "schedule": [
-        { "station": "KSRA", "arr": "09:50", "dep": "09:50" },
-        { "station": "ASO", "arr": "10:15", "dep": "10:16" },
-        { "station": "TLA", "arr": "10:35", "dep": "10:36" },
-        { "station": "KYN", "arr": "11:00", "dep": "11:00" }
+        {
+          "station": "KSRA",
+          "arr": "09:50",
+          "dep": "09:50"
+        },
+        {
+          "station": "ASO",
+          "arr": "10:15",
+          "dep": "10:16"
+        },
+        {
+          "station": "TLA",
+          "arr": "10:35",
+          "dep": "10:36"
+        },
+        {
+          "station": "KYN",
+          "arr": "11:00",
+          "dep": "11:00"
+        }
       ]
     },
     {
@@ -125,14 +420,1301 @@
       "direction": "UP",
       "coaches": 12,
       "capacityPax": 2600,
-      "route": ["CSMT", "BY", "DR", "CLA", "GC", "BND", "MLND", "TNA", "MBQ", "DIVA", "DI", "KYN", "SHAD", "TLA"],
+      "route": [
+        "CSMT",
+        "BY",
+        "DR",
+        "CLA",
+        "GC",
+        "BND",
+        "MLND",
+        "TNA",
+        "MBQ",
+        "DIVA",
+        "DI",
+        "KYN",
+        "SHAD",
+        "TLA"
+      ],
       "schedule": [
-        { "station": "CSMT", "arr": "08:30", "dep": "08:30" },
-        { "station": "DR", "arr": "08:45", "dep": "08:46" },
-        { "station": "CLA", "arr": "08:53", "dep": "08:54" },
-        { "station": "TNA", "arr": "09:20", "dep": "09:21" },
-        { "station": "KYN", "arr": "09:45", "dep": "09:47" },
-        { "station": "TLA", "arr": "10:00", "dep": "10:00" }
+        {
+          "station": "CSMT",
+          "arr": "08:30",
+          "dep": "08:30"
+        },
+        {
+          "station": "DR",
+          "arr": "08:45",
+          "dep": "08:46"
+        },
+        {
+          "station": "CLA",
+          "arr": "08:53",
+          "dep": "08:54"
+        },
+        {
+          "station": "TNA",
+          "arr": "09:20",
+          "dep": "09:21"
+        },
+        {
+          "station": "KYN",
+          "arr": "09:45",
+          "dep": "09:47"
+        },
+        {
+          "station": "TLA",
+          "arr": "10:00",
+          "dep": "10:00"
+        }
+      ]
+    },
+    {
+      "number": "96503",
+      "name": "CSMT – Kasara Local",
+      "type": "local",
+      "direction": "UP",
+      "coaches": 12,
+      "capacityPax": 2200,
+      "route": [
+        "CSMT",
+        "BY",
+        "DR",
+        "CLA",
+        "GC",
+        "BND",
+        "MLND",
+        "TNA",
+        "MBQ",
+        "DIVA",
+        "DI",
+        "KYN",
+        "SHAD",
+        "TLA",
+        "KDV",
+        "VSD",
+        "ASO",
+        "ATG",
+        "KHDI",
+        "KSRA"
+      ],
+      "schedule": [
+        {
+          "station": "CSMT",
+          "arr": "07:48",
+          "dep": "07:48"
+        },
+        {
+          "station": "BY",
+          "arr": "07:54",
+          "dep": "07:55"
+        },
+        {
+          "station": "DR",
+          "arr": "08:00",
+          "dep": "08:01"
+        },
+        {
+          "station": "CLA",
+          "arr": "08:05",
+          "dep": "08:06"
+        },
+        {
+          "station": "GC",
+          "arr": "08:09",
+          "dep": "08:10"
+        },
+        {
+          "station": "BND",
+          "arr": "08:14",
+          "dep": "08:15"
+        },
+        {
+          "station": "MLND",
+          "arr": "08:18",
+          "dep": "08:19"
+        },
+        {
+          "station": "TNA",
+          "arr": "08:24",
+          "dep": "08:25"
+        },
+        {
+          "station": "MBQ",
+          "arr": "08:30",
+          "dep": "08:31"
+        },
+        {
+          "station": "DIVA",
+          "arr": "08:35",
+          "dep": "08:36"
+        },
+        {
+          "station": "DI",
+          "arr": "08:40",
+          "dep": "08:41"
+        },
+        {
+          "station": "KYN",
+          "arr": "08:47",
+          "dep": "08:48"
+        },
+        {
+          "station": "SHAD",
+          "arr": "08:53",
+          "dep": "08:54"
+        },
+        {
+          "station": "TLA",
+          "arr": "08:59",
+          "dep": "09:00"
+        },
+        {
+          "station": "KDV",
+          "arr": "09:07",
+          "dep": "09:08"
+        },
+        {
+          "station": "VSD",
+          "arr": "09:15",
+          "dep": "09:16"
+        },
+        {
+          "station": "ASO",
+          "arr": "09:23",
+          "dep": "09:24"
+        },
+        {
+          "station": "ATG",
+          "arr": "09:31",
+          "dep": "09:32"
+        },
+        {
+          "station": "KHDI",
+          "arr": "09:39",
+          "dep": "09:40"
+        },
+        {
+          "station": "KSRA",
+          "arr": "09:49",
+          "dep": "09:49"
+        }
+      ]
+    },
+    {
+      "number": "96505",
+      "name": "CSMT – Kasara Local",
+      "type": "local",
+      "direction": "UP",
+      "coaches": 12,
+      "capacityPax": 2200,
+      "route": [
+        "CSMT",
+        "BY",
+        "DR",
+        "CLA",
+        "GC",
+        "BND",
+        "MLND",
+        "TNA",
+        "MBQ",
+        "DIVA",
+        "DI",
+        "KYN",
+        "SHAD",
+        "TLA",
+        "KDV",
+        "VSD",
+        "ASO",
+        "ATG",
+        "KHDI",
+        "KSRA"
+      ],
+      "schedule": [
+        {
+          "station": "CSMT",
+          "arr": "08:18",
+          "dep": "08:18"
+        },
+        {
+          "station": "BY",
+          "arr": "08:24",
+          "dep": "08:25"
+        },
+        {
+          "station": "DR",
+          "arr": "08:30",
+          "dep": "08:31"
+        },
+        {
+          "station": "CLA",
+          "arr": "08:35",
+          "dep": "08:36"
+        },
+        {
+          "station": "GC",
+          "arr": "08:39",
+          "dep": "08:40"
+        },
+        {
+          "station": "BND",
+          "arr": "08:44",
+          "dep": "08:45"
+        },
+        {
+          "station": "MLND",
+          "arr": "08:48",
+          "dep": "08:49"
+        },
+        {
+          "station": "TNA",
+          "arr": "08:54",
+          "dep": "08:55"
+        },
+        {
+          "station": "MBQ",
+          "arr": "09:00",
+          "dep": "09:01"
+        },
+        {
+          "station": "DIVA",
+          "arr": "09:05",
+          "dep": "09:06"
+        },
+        {
+          "station": "DI",
+          "arr": "09:10",
+          "dep": "09:11"
+        },
+        {
+          "station": "KYN",
+          "arr": "09:17",
+          "dep": "09:18"
+        },
+        {
+          "station": "SHAD",
+          "arr": "09:23",
+          "dep": "09:24"
+        },
+        {
+          "station": "TLA",
+          "arr": "09:29",
+          "dep": "09:30"
+        },
+        {
+          "station": "KDV",
+          "arr": "09:37",
+          "dep": "09:38"
+        },
+        {
+          "station": "VSD",
+          "arr": "09:45",
+          "dep": "09:46"
+        },
+        {
+          "station": "ASO",
+          "arr": "09:53",
+          "dep": "09:54"
+        },
+        {
+          "station": "ATG",
+          "arr": "10:01",
+          "dep": "10:02"
+        },
+        {
+          "station": "KHDI",
+          "arr": "10:09",
+          "dep": "10:10"
+        },
+        {
+          "station": "KSRA",
+          "arr": "10:19",
+          "dep": "10:19"
+        }
+      ]
+    },
+    {
+      "number": "96507",
+      "name": "CSMT – Kasara Local",
+      "type": "local",
+      "direction": "UP",
+      "coaches": 12,
+      "capacityPax": 2200,
+      "route": [
+        "CSMT",
+        "BY",
+        "DR",
+        "CLA",
+        "GC",
+        "BND",
+        "MLND",
+        "TNA",
+        "MBQ",
+        "DIVA",
+        "DI",
+        "KYN",
+        "SHAD",
+        "TLA",
+        "KDV",
+        "VSD",
+        "ASO",
+        "ATG",
+        "KHDI",
+        "KSRA"
+      ],
+      "schedule": [
+        {
+          "station": "CSMT",
+          "arr": "08:48",
+          "dep": "08:48"
+        },
+        {
+          "station": "BY",
+          "arr": "08:54",
+          "dep": "08:55"
+        },
+        {
+          "station": "DR",
+          "arr": "09:00",
+          "dep": "09:01"
+        },
+        {
+          "station": "CLA",
+          "arr": "09:05",
+          "dep": "09:06"
+        },
+        {
+          "station": "GC",
+          "arr": "09:09",
+          "dep": "09:10"
+        },
+        {
+          "station": "BND",
+          "arr": "09:14",
+          "dep": "09:15"
+        },
+        {
+          "station": "MLND",
+          "arr": "09:18",
+          "dep": "09:19"
+        },
+        {
+          "station": "TNA",
+          "arr": "09:24",
+          "dep": "09:25"
+        },
+        {
+          "station": "MBQ",
+          "arr": "09:30",
+          "dep": "09:31"
+        },
+        {
+          "station": "DIVA",
+          "arr": "09:35",
+          "dep": "09:36"
+        },
+        {
+          "station": "DI",
+          "arr": "09:40",
+          "dep": "09:41"
+        },
+        {
+          "station": "KYN",
+          "arr": "09:47",
+          "dep": "09:48"
+        },
+        {
+          "station": "SHAD",
+          "arr": "09:53",
+          "dep": "09:54"
+        },
+        {
+          "station": "TLA",
+          "arr": "09:59",
+          "dep": "10:00"
+        },
+        {
+          "station": "KDV",
+          "arr": "10:07",
+          "dep": "10:08"
+        },
+        {
+          "station": "VSD",
+          "arr": "10:15",
+          "dep": "10:16"
+        },
+        {
+          "station": "ASO",
+          "arr": "10:23",
+          "dep": "10:24"
+        },
+        {
+          "station": "ATG",
+          "arr": "10:31",
+          "dep": "10:32"
+        },
+        {
+          "station": "KHDI",
+          "arr": "10:39",
+          "dep": "10:40"
+        },
+        {
+          "station": "KSRA",
+          "arr": "10:49",
+          "dep": "10:49"
+        }
+      ]
+    },
+    {
+      "number": "96509",
+      "name": "CSMT – Kasara Local",
+      "type": "local",
+      "direction": "UP",
+      "coaches": 12,
+      "capacityPax": 2200,
+      "route": [
+        "CSMT",
+        "BY",
+        "DR",
+        "CLA",
+        "GC",
+        "BND",
+        "MLND",
+        "TNA",
+        "MBQ",
+        "DIVA",
+        "DI",
+        "KYN",
+        "SHAD",
+        "TLA",
+        "KDV",
+        "VSD",
+        "ASO",
+        "ATG",
+        "KHDI",
+        "KSRA"
+      ],
+      "schedule": [
+        {
+          "station": "CSMT",
+          "arr": "09:18",
+          "dep": "09:18"
+        },
+        {
+          "station": "BY",
+          "arr": "09:24",
+          "dep": "09:25"
+        },
+        {
+          "station": "DR",
+          "arr": "09:30",
+          "dep": "09:31"
+        },
+        {
+          "station": "CLA",
+          "arr": "09:35",
+          "dep": "09:36"
+        },
+        {
+          "station": "GC",
+          "arr": "09:39",
+          "dep": "09:40"
+        },
+        {
+          "station": "BND",
+          "arr": "09:44",
+          "dep": "09:45"
+        },
+        {
+          "station": "MLND",
+          "arr": "09:48",
+          "dep": "09:49"
+        },
+        {
+          "station": "TNA",
+          "arr": "09:54",
+          "dep": "09:55"
+        },
+        {
+          "station": "MBQ",
+          "arr": "10:00",
+          "dep": "10:01"
+        },
+        {
+          "station": "DIVA",
+          "arr": "10:05",
+          "dep": "10:06"
+        },
+        {
+          "station": "DI",
+          "arr": "10:10",
+          "dep": "10:11"
+        },
+        {
+          "station": "KYN",
+          "arr": "10:17",
+          "dep": "10:18"
+        },
+        {
+          "station": "SHAD",
+          "arr": "10:23",
+          "dep": "10:24"
+        },
+        {
+          "station": "TLA",
+          "arr": "10:29",
+          "dep": "10:30"
+        },
+        {
+          "station": "KDV",
+          "arr": "10:37",
+          "dep": "10:38"
+        },
+        {
+          "station": "VSD",
+          "arr": "10:45",
+          "dep": "10:46"
+        },
+        {
+          "station": "ASO",
+          "arr": "10:53",
+          "dep": "10:54"
+        },
+        {
+          "station": "ATG",
+          "arr": "11:01",
+          "dep": "11:02"
+        },
+        {
+          "station": "KHDI",
+          "arr": "11:09",
+          "dep": "11:10"
+        },
+        {
+          "station": "KSRA",
+          "arr": "11:19",
+          "dep": "11:19"
+        }
+      ]
+    },
+    {
+      "number": "96511",
+      "name": "CSMT – Kasara Local",
+      "type": "local",
+      "direction": "UP",
+      "coaches": 12,
+      "capacityPax": 2200,
+      "route": [
+        "CSMT",
+        "BY",
+        "DR",
+        "CLA",
+        "GC",
+        "BND",
+        "MLND",
+        "TNA",
+        "MBQ",
+        "DIVA",
+        "DI",
+        "KYN",
+        "SHAD",
+        "TLA",
+        "KDV",
+        "VSD",
+        "ASO",
+        "ATG",
+        "KHDI",
+        "KSRA"
+      ],
+      "schedule": [
+        {
+          "station": "CSMT",
+          "arr": "09:48",
+          "dep": "09:48"
+        },
+        {
+          "station": "BY",
+          "arr": "09:54",
+          "dep": "09:55"
+        },
+        {
+          "station": "DR",
+          "arr": "10:00",
+          "dep": "10:01"
+        },
+        {
+          "station": "CLA",
+          "arr": "10:05",
+          "dep": "10:06"
+        },
+        {
+          "station": "GC",
+          "arr": "10:09",
+          "dep": "10:10"
+        },
+        {
+          "station": "BND",
+          "arr": "10:14",
+          "dep": "10:15"
+        },
+        {
+          "station": "MLND",
+          "arr": "10:18",
+          "dep": "10:19"
+        },
+        {
+          "station": "TNA",
+          "arr": "10:24",
+          "dep": "10:25"
+        },
+        {
+          "station": "MBQ",
+          "arr": "10:30",
+          "dep": "10:31"
+        },
+        {
+          "station": "DIVA",
+          "arr": "10:35",
+          "dep": "10:36"
+        },
+        {
+          "station": "DI",
+          "arr": "10:40",
+          "dep": "10:41"
+        },
+        {
+          "station": "KYN",
+          "arr": "10:47",
+          "dep": "10:48"
+        },
+        {
+          "station": "SHAD",
+          "arr": "10:53",
+          "dep": "10:54"
+        },
+        {
+          "station": "TLA",
+          "arr": "10:59",
+          "dep": "11:00"
+        },
+        {
+          "station": "KDV",
+          "arr": "11:07",
+          "dep": "11:08"
+        },
+        {
+          "station": "VSD",
+          "arr": "11:15",
+          "dep": "11:16"
+        },
+        {
+          "station": "ASO",
+          "arr": "11:23",
+          "dep": "11:24"
+        },
+        {
+          "station": "ATG",
+          "arr": "11:31",
+          "dep": "11:32"
+        },
+        {
+          "station": "KHDI",
+          "arr": "11:39",
+          "dep": "11:40"
+        },
+        {
+          "station": "KSRA",
+          "arr": "11:49",
+          "dep": "11:49"
+        }
+      ]
+    },
+    {
+      "number": "96527",
+      "name": "CSMT – Titwala Local",
+      "type": "local",
+      "direction": "UP",
+      "coaches": 12,
+      "capacityPax": 2200,
+      "route": [
+        "CSMT",
+        "BY",
+        "DR",
+        "CLA",
+        "GC",
+        "BND",
+        "MLND",
+        "TNA",
+        "MBQ",
+        "DIVA",
+        "DI",
+        "KYN",
+        "SHAD",
+        "TLA"
+      ],
+      "schedule": [
+        {
+          "station": "CSMT",
+          "arr": "08:35",
+          "dep": "08:35"
+        },
+        {
+          "station": "BY",
+          "arr": "08:41",
+          "dep": "08:42"
+        },
+        {
+          "station": "DR",
+          "arr": "08:47",
+          "dep": "08:48"
+        },
+        {
+          "station": "CLA",
+          "arr": "08:52",
+          "dep": "08:53"
+        },
+        {
+          "station": "GC",
+          "arr": "08:56",
+          "dep": "08:57"
+        },
+        {
+          "station": "BND",
+          "arr": "09:01",
+          "dep": "09:02"
+        },
+        {
+          "station": "MLND",
+          "arr": "09:05",
+          "dep": "09:06"
+        },
+        {
+          "station": "TNA",
+          "arr": "09:11",
+          "dep": "09:12"
+        },
+        {
+          "station": "MBQ",
+          "arr": "09:17",
+          "dep": "09:18"
+        },
+        {
+          "station": "DIVA",
+          "arr": "09:22",
+          "dep": "09:23"
+        },
+        {
+          "station": "DI",
+          "arr": "09:27",
+          "dep": "09:28"
+        },
+        {
+          "station": "KYN",
+          "arr": "09:34",
+          "dep": "09:35"
+        },
+        {
+          "station": "SHAD",
+          "arr": "09:40",
+          "dep": "09:41"
+        },
+        {
+          "station": "TLA",
+          "arr": "09:46",
+          "dep": "09:46"
+        }
+      ]
+    },
+    {
+      "number": "96529",
+      "name": "CSMT – Titwala Local",
+      "type": "local",
+      "direction": "UP",
+      "coaches": 12,
+      "capacityPax": 2200,
+      "route": [
+        "CSMT",
+        "BY",
+        "DR",
+        "CLA",
+        "GC",
+        "BND",
+        "MLND",
+        "TNA",
+        "MBQ",
+        "DIVA",
+        "DI",
+        "KYN",
+        "SHAD",
+        "TLA"
+      ],
+      "schedule": [
+        {
+          "station": "CSMT",
+          "arr": "09:05",
+          "dep": "09:05"
+        },
+        {
+          "station": "BY",
+          "arr": "09:11",
+          "dep": "09:12"
+        },
+        {
+          "station": "DR",
+          "arr": "09:17",
+          "dep": "09:18"
+        },
+        {
+          "station": "CLA",
+          "arr": "09:22",
+          "dep": "09:23"
+        },
+        {
+          "station": "GC",
+          "arr": "09:26",
+          "dep": "09:27"
+        },
+        {
+          "station": "BND",
+          "arr": "09:31",
+          "dep": "09:32"
+        },
+        {
+          "station": "MLND",
+          "arr": "09:35",
+          "dep": "09:36"
+        },
+        {
+          "station": "TNA",
+          "arr": "09:41",
+          "dep": "09:42"
+        },
+        {
+          "station": "MBQ",
+          "arr": "09:47",
+          "dep": "09:48"
+        },
+        {
+          "station": "DIVA",
+          "arr": "09:52",
+          "dep": "09:53"
+        },
+        {
+          "station": "DI",
+          "arr": "09:57",
+          "dep": "09:58"
+        },
+        {
+          "station": "KYN",
+          "arr": "10:04",
+          "dep": "10:05"
+        },
+        {
+          "station": "SHAD",
+          "arr": "10:10",
+          "dep": "10:11"
+        },
+        {
+          "station": "TLA",
+          "arr": "10:16",
+          "dep": "10:16"
+        }
+      ]
+    },
+    {
+      "number": "95014",
+      "name": "Kasara – CSMT Local",
+      "type": "local",
+      "direction": "DOWN",
+      "coaches": 12,
+      "capacityPax": 2200,
+      "route": [
+        "KSRA",
+        "KHDI",
+        "ATG",
+        "ASO",
+        "VSD",
+        "KDV",
+        "TLA",
+        "SHAD",
+        "KYN",
+        "DI",
+        "DIVA",
+        "MBQ",
+        "TNA",
+        "MLND",
+        "BND",
+        "GC",
+        "CLA",
+        "DR",
+        "BY",
+        "CSMT"
+      ],
+      "schedule": [
+        {
+          "station": "KSRA",
+          "arr": "07:40",
+          "dep": "07:40"
+        },
+        {
+          "station": "KHDI",
+          "arr": "07:50",
+          "dep": "07:51"
+        },
+        {
+          "station": "ATG",
+          "arr": "07:58",
+          "dep": "07:59"
+        },
+        {
+          "station": "ASO",
+          "arr": "08:06",
+          "dep": "08:07"
+        },
+        {
+          "station": "VSD",
+          "arr": "08:14",
+          "dep": "08:15"
+        },
+        {
+          "station": "KDV",
+          "arr": "08:22",
+          "dep": "08:23"
+        },
+        {
+          "station": "TLA",
+          "arr": "08:30",
+          "dep": "08:31"
+        },
+        {
+          "station": "SHAD",
+          "arr": "08:36",
+          "dep": "08:37"
+        },
+        {
+          "station": "KYN",
+          "arr": "08:42",
+          "dep": "08:43"
+        },
+        {
+          "station": "DI",
+          "arr": "08:49",
+          "dep": "08:50"
+        },
+        {
+          "station": "DIVA",
+          "arr": "08:54",
+          "dep": "08:55"
+        },
+        {
+          "station": "MBQ",
+          "arr": "08:59",
+          "dep": "09:00"
+        },
+        {
+          "station": "TNA",
+          "arr": "09:05",
+          "dep": "09:06"
+        },
+        {
+          "station": "MLND",
+          "arr": "09:11",
+          "dep": "09:12"
+        },
+        {
+          "station": "BND",
+          "arr": "09:15",
+          "dep": "09:16"
+        },
+        {
+          "station": "GC",
+          "arr": "09:20",
+          "dep": "09:21"
+        },
+        {
+          "station": "CLA",
+          "arr": "09:24",
+          "dep": "09:25"
+        },
+        {
+          "station": "DR",
+          "arr": "09:29",
+          "dep": "09:30"
+        },
+        {
+          "station": "BY",
+          "arr": "09:35",
+          "dep": "09:36"
+        },
+        {
+          "station": "CSMT",
+          "arr": "09:41",
+          "dep": "09:41"
+        }
+      ]
+    },
+    {
+      "number": "95016",
+      "name": "Kasara – CSMT Local",
+      "type": "local",
+      "direction": "DOWN",
+      "coaches": 12,
+      "capacityPax": 2200,
+      "route": [
+        "KSRA",
+        "KHDI",
+        "ATG",
+        "ASO",
+        "VSD",
+        "KDV",
+        "TLA",
+        "SHAD",
+        "KYN",
+        "DI",
+        "DIVA",
+        "MBQ",
+        "TNA",
+        "MLND",
+        "BND",
+        "GC",
+        "CLA",
+        "DR",
+        "BY",
+        "CSMT"
+      ],
+      "schedule": [
+        {
+          "station": "KSRA",
+          "arr": "08:30",
+          "dep": "08:30"
+        },
+        {
+          "station": "KHDI",
+          "arr": "08:40",
+          "dep": "08:41"
+        },
+        {
+          "station": "ATG",
+          "arr": "08:48",
+          "dep": "08:49"
+        },
+        {
+          "station": "ASO",
+          "arr": "08:56",
+          "dep": "08:57"
+        },
+        {
+          "station": "VSD",
+          "arr": "09:04",
+          "dep": "09:05"
+        },
+        {
+          "station": "KDV",
+          "arr": "09:12",
+          "dep": "09:13"
+        },
+        {
+          "station": "TLA",
+          "arr": "09:20",
+          "dep": "09:21"
+        },
+        {
+          "station": "SHAD",
+          "arr": "09:26",
+          "dep": "09:27"
+        },
+        {
+          "station": "KYN",
+          "arr": "09:32",
+          "dep": "09:33"
+        },
+        {
+          "station": "DI",
+          "arr": "09:39",
+          "dep": "09:40"
+        },
+        {
+          "station": "DIVA",
+          "arr": "09:44",
+          "dep": "09:45"
+        },
+        {
+          "station": "MBQ",
+          "arr": "09:49",
+          "dep": "09:50"
+        },
+        {
+          "station": "TNA",
+          "arr": "09:55",
+          "dep": "09:56"
+        },
+        {
+          "station": "MLND",
+          "arr": "10:01",
+          "dep": "10:02"
+        },
+        {
+          "station": "BND",
+          "arr": "10:05",
+          "dep": "10:06"
+        },
+        {
+          "station": "GC",
+          "arr": "10:10",
+          "dep": "10:11"
+        },
+        {
+          "station": "CLA",
+          "arr": "10:14",
+          "dep": "10:15"
+        },
+        {
+          "station": "DR",
+          "arr": "10:19",
+          "dep": "10:20"
+        },
+        {
+          "station": "BY",
+          "arr": "10:25",
+          "dep": "10:26"
+        },
+        {
+          "station": "CSMT",
+          "arr": "10:31",
+          "dep": "10:31"
+        }
+      ]
+    },
+    {
+      "number": "95018",
+      "name": "Kasara – CSMT Local",
+      "type": "local",
+      "direction": "DOWN",
+      "coaches": 12,
+      "capacityPax": 2200,
+      "route": [
+        "KSRA",
+        "KHDI",
+        "ATG",
+        "ASO",
+        "VSD",
+        "KDV",
+        "TLA",
+        "SHAD",
+        "KYN",
+        "DI",
+        "DIVA",
+        "MBQ",
+        "TNA",
+        "MLND",
+        "BND",
+        "GC",
+        "CLA",
+        "DR",
+        "BY",
+        "CSMT"
+      ],
+      "schedule": [
+        {
+          "station": "KSRA",
+          "arr": "09:20",
+          "dep": "09:20"
+        },
+        {
+          "station": "KHDI",
+          "arr": "09:30",
+          "dep": "09:31"
+        },
+        {
+          "station": "ATG",
+          "arr": "09:38",
+          "dep": "09:39"
+        },
+        {
+          "station": "ASO",
+          "arr": "09:46",
+          "dep": "09:47"
+        },
+        {
+          "station": "VSD",
+          "arr": "09:54",
+          "dep": "09:55"
+        },
+        {
+          "station": "KDV",
+          "arr": "10:02",
+          "dep": "10:03"
+        },
+        {
+          "station": "TLA",
+          "arr": "10:10",
+          "dep": "10:11"
+        },
+        {
+          "station": "SHAD",
+          "arr": "10:16",
+          "dep": "10:17"
+        },
+        {
+          "station": "KYN",
+          "arr": "10:22",
+          "dep": "10:23"
+        },
+        {
+          "station": "DI",
+          "arr": "10:29",
+          "dep": "10:30"
+        },
+        {
+          "station": "DIVA",
+          "arr": "10:34",
+          "dep": "10:35"
+        },
+        {
+          "station": "MBQ",
+          "arr": "10:39",
+          "dep": "10:40"
+        },
+        {
+          "station": "TNA",
+          "arr": "10:45",
+          "dep": "10:46"
+        },
+        {
+          "station": "MLND",
+          "arr": "10:51",
+          "dep": "10:52"
+        },
+        {
+          "station": "BND",
+          "arr": "10:55",
+          "dep": "10:56"
+        },
+        {
+          "station": "GC",
+          "arr": "11:00",
+          "dep": "11:01"
+        },
+        {
+          "station": "CLA",
+          "arr": "11:04",
+          "dep": "11:05"
+        },
+        {
+          "station": "DR",
+          "arr": "11:09",
+          "dep": "11:10"
+        },
+        {
+          "station": "BY",
+          "arr": "11:15",
+          "dep": "11:16"
+        },
+        {
+          "station": "CSMT",
+          "arr": "11:21",
+          "dep": "11:21"
+        }
       ]
     }
   ]
