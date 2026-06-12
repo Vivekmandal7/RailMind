@@ -16,6 +16,7 @@ import {
   type TrainSnapshot,
   type TrainStatus
 } from "./indiaTrains";
+import { lodPolyline, lodTierForZoom, memoByTier } from "./geometryLod";
 import { buildTrackTrail, trailLengthKm } from "./trainMotion";
 import { sectionGeometry } from "./twinBridge";
 import type { Conflict, ResolutionPlan } from "./types";
@@ -251,7 +252,15 @@ export function buildCorridorRailLayers(
   dim: boolean
 ): Layer[] {
   const w = routeWidth(zoom);
-  const lines = sections.filter((s) => s.geometry && s.geometry.length > 1);
+  // Memoized per LOD tier: data identity stays stable while panning at a
+  // constant tier, so deck.gl doesn't re-upload path attributes per move-frame
+  // (matters once sections carry dense real OSM geometry).
+  const tier = lodTierForZoom(zoom);
+  const lines = memoByTier(sections, tier, "corridor-lines", (secs, t) =>
+    secs
+      .filter((s) => s.geometry && s.geometry.length > 1)
+      .map((s) => ({ ...s, geometry: lodPolyline(s.geometry, t) }))
+  );
   // Real railway corridor: ballast bed (formation) + steel rails on top using the actual
   // high-resolution section geometry from the backend. This is the "real railway" the trains
   // are moving on with live animation.
@@ -354,6 +363,8 @@ function buildTrainLayers(
   if (trains.length === 0) return [];
 
   const moving = trains.filter((t) => t.active && t.speedKmh > 0.5);
+  // Denser trail sampling up close so the comet hugs real track curves.
+  const trailSamples = zoom >= 11 ? 48 : 32;
   const trailData = moving
     .map((t) => ({
       train: t,
@@ -361,7 +372,8 @@ function buildTrainLayers(
         t.polyline,
         t.polyCumKm,
         t.distKm,
-        trailLengthKm(t.speedKmh)
+        trailLengthKm(t.speedKmh),
+        trailSamples
       )
     }))
     .filter((d) => d.path.length > 1);
@@ -410,7 +422,10 @@ function buildTrainLayers(
   // Radar ping: moving trains emit an expanding, fading halo so the map reads
   // as live even when geographic drift is slow at city zoom. Purely visual.
   // Speed modulates intensity + size → fast expresses feel energetic, locals calmer.
+  // Provenance modulates the ping too: trains on a REAL NTES report pulse
+  // faster and brighter than schedule-modeled (SIM) ones — honest at a glance.
   const pulse = 0.5 + 0.5 * Math.sin(frameTick * 0.08);
+  const livePulse = 0.5 + 0.5 * Math.sin(frameTick * 0.14);
   if (moving.length > 0) {
     layers.push(
       new ScatterplotLayer({
@@ -418,15 +433,18 @@ function buildTrainLayers(
         data: moving,
         getPosition: (d: TrainSnapshot) => d.position,
         getRadius: (d: TrainSnapshot) => {
-          const base = (d.number === selectedTrainNumber ? 14 : 10) + pulse * 6;
+          const p = d.source === "live" ? livePulse : pulse;
+          const base = (d.number === selectedTrainNumber ? 14 : 10) + p * 6;
           const speedBoost = Math.min(9, (d.speedKmh || 0) / 35);
-          return base + speedBoost;
+          return base + speedBoost + (d.source === "live" ? 3 : 0);
         },
         radiusUnits: "pixels",
         getFillColor: (d: TrainSnapshot) => {
           const c = statusColor(d.status);
+          const p = d.source === "live" ? livePulse : pulse;
           const speedA = Math.max(0.35, Math.min(0.95, ((d.speedKmh || 40) / 120)));
-          return [c[0], c[1], c[2], Math.round(26 * (1 - pulse) * speedA)];
+          const strength = d.source === "live" ? 40 : 26;
+          return [c[0], c[1], c[2], Math.round(strength * (1 - p) * speedA)];
         },
         parameters: { depthTest: false },
         pickable: false,
@@ -456,7 +474,9 @@ function buildTrainLayers(
         const c = statusColor(d.status);
         const spd = d.speedKmh || 0;
         // Stopped/dwelling trains have a subtler glow so the eye rests on moving traffic.
-        const a = spd < 3 ? 38 : 75;
+        let a = spd < 3 ? 38 : 75;
+        // Schedule-modeled (SIM) trains glow dimmer than live-reported ones.
+        if (d.source && d.source !== "live") a = Math.round(a * 0.65);
         return [c[0], c[1], c[2], a];
       },
       parameters: { depthTest: false },
@@ -601,10 +621,12 @@ function buildTrainLayers(
         // Number, plus the live speed on a second line while the train is actually moving
         // — so an operator can read which numbered train is running and how fast, right on
         // the map (not just in the side panel).
-        getText: (d: TrainSnapshot) =>
-          (d.speedKmh || 0) >= 2
-            ? `${d.number}\n${Math.round(d.speedKmh)} km/h`
-            : d.number,
+        getText: (d: TrainSnapshot) => {
+          const head = d.source === "live" ? `${d.number} · LIVE` : d.number;
+          return (d.speedKmh || 0) >= 2
+            ? `${head}\n${Math.round(d.speedKmh)} km/h`
+            : head;
+        },
         getSize: (d: TrainSnapshot) => (d.number === selectedTrainNumber ? 14 : 11),
         getColor: [236, 240, 245, 255],
         // Lift the label higher above the bigger 3D loco so it doesn't overlap the model.

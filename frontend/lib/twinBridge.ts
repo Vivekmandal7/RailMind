@@ -66,7 +66,8 @@ export function liveStateToSnapshot(
     prevStation: state.prevStation,
     etaNextSec: state.etaNextSec,
     etaFinalSec: state.etaFinalSec,
-    active: state.active
+    active: state.active,
+    source: state.source
   };
 }
 
@@ -102,8 +103,15 @@ export class TwinInterpolator {
         });
       }
     }
-    for (const num of this.rendered.keys()) {
-      if (!seen.has(num)) this.rendered.delete(num);
+    // Each snapshot is the COMPLETE world state — drop targets that vanished
+    // too, or trains ingested during the local-fallback warmup ghost around
+    // the live map forever (e.g. an india-wide train at a bogus speed
+    // hijacking the 3D "follow the fastest train" auto-pick).
+    for (const num of [...this.targets.keys()]) {
+      if (!seen.has(num)) {
+        this.targets.delete(num);
+        this.rendered.delete(num);
+      }
     }
   }
 
@@ -159,7 +167,10 @@ export class TwinInterpolator {
       r.lastSpeedKmh = t.speedKmh * 0.6 + visualSpeed * 0.4; // blend toward reported for stability
 
       const { pos, bearing } = interpAlong(g.polyline, g.cum, r.distKm);
-      r.bearing = lerpAngle(r.bearing, bearing, Math.min(1, dtReal * 14));
+      // 10/s pull (was 14): with dense real-track geometry the bearing changes
+      // every ~10 m, so a slightly softer pull reads as smooth steering through
+      // curves instead of nose-twitching vertex to vertex.
+      r.bearing = lerpAngle(r.bearing, bearing, Math.min(1, dtReal * 10));
 
       const snap = liveStateToSnapshot(t, m, pos, r.bearing, r.distKm);
       // forward the (blended) speed so trails and pulses react to motion
