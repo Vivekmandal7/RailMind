@@ -42,6 +42,8 @@ import StationView from "@/components/StationView";
 import TrainSearch from "@/components/TrainSearch";
 import SimClockBar from "@/components/SimClockBar";
 import MapLegend from "@/components/MapLegend";
+import RailInfraControl from "@/components/RailInfraControl";
+import { applyOrmOverlay } from "@/lib/ormOverlay";
 import { DemoCaption } from "@/components/DemoMode";
 import { isBenignMapNetworkError } from "@/lib/mapNetworkErrors";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -225,6 +227,12 @@ export default function IndiaMap() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const lastMapResetRef = useRef(0);
 
+  // OpenRailwayMap infrastructure overlay (shared with RailInfraControl + legend).
+  const ormStyle = useStore((s) => s.ormStyle);
+  const ormOpacity = useStore((s) => s.ormOpacity);
+  const ormRef = useRef({ style: ormStyle, opacity: ormOpacity });
+  ormRef.current = { style: ormStyle, opacity: ormOpacity };
+
   /** Bounds of the live corridor (from its real station coords) so we frame the
    *  trains on connect instead of dumping the user on an all-Asia view. */
   const corridorBounds = useMemo<[[number, number], [number, number]] | null>(() => {
@@ -407,7 +415,13 @@ export default function IndiaMap() {
         const cand = activeStates.map(toSnap);
         trains = cand.filter((t) => inViewPos(t.position) || t.number === selected);
         if (selected && !trains.some((t) => t.number === selected)) {
-          const sel = cand.find((t) => t.number === selected) || toSnap(st.states.find((x: any) => x.number === selected));
+          // The selected number can reference a train the local sim doesn't
+          // know (e.g. selection made in live mode before a fallback) —
+          // toSnap(undefined) here used to crash the whole map.
+          const fallbackState = st.states.find((x: any) => x.number === selected);
+          const sel =
+            cand.find((t) => t.number === selected) ??
+            (fallbackState ? toSnap(fallbackState) : null);
           if (sel) trains = [...trains, sel];
         }
         selectedTrain = selected ? trains.find((t) => t.number === selected) ?? null : null;
@@ -544,6 +558,16 @@ export default function IndiaMap() {
     requestAnimationFrame(() => renderFrame(0));
   }, [renderFrame, selectTrainStore]);
 
+  // A selection made during the LOCAL-fallback warmup (e.g. 3D auto-pick racing
+  // the WebSocket connect) can reference a train that doesn't exist in the live
+  // corridor — its detail card would then show stale local-sim numbers forever.
+  // Once live metadata is in, drop any selection the corridor doesn't know.
+  useEffect(() => {
+    if (!isLive || !selectedNumber) return;
+    if (Object.keys(trainMeta).length === 0) return;
+    if (!trainMeta[selectedNumber]) deselectTrain();
+  }, [isLive, selectedNumber, trainMeta, deselectTrain]);
+
   const selectStation = useCallback(
     (code: string) => {
       // Station board and train card are mutually exclusive.
@@ -629,6 +653,8 @@ export default function IndiaMap() {
       const next = !sat;
       map.once("style.load", () => {
         themeMapBackground(map);
+        // setStyle wipes custom sources — put the OpenRailwayMap overlay back.
+        applyOrmOverlay(map, ormRef.current.style, ormRef.current.opacity);
         rebuildRailCacheRef.current();
         renderFrameRef.current(0);
       });
@@ -684,6 +710,20 @@ export default function IndiaMap() {
       document.removeEventListener("webkitfullscreenchange", onFsChange);
     };
   }, []);
+
+  // Keep the OpenRailwayMap overlay in sync with the picked style/opacity. The
+  // satellite dep re-runs this after a basemap swap settles (belt + braces with
+  // the style.load re-apply above); if the style is mid-swap the apply fails
+  // soft and one 'idle' retry lands it.
+  useEffect(() => {
+    const map = loadedMap;
+    if (!map) return;
+    if (!applyOrmOverlay(map, ormStyle, ormOpacity)) {
+      map.once("idle", () => {
+        applyOrmOverlay(map, ormRef.current.style, ormRef.current.opacity);
+      });
+    }
+  }, [loadedMap, satellite, ormStyle, ormOpacity]);
 
   useEffect(() => {
     // Leaving 3D → tilt back flat. Entering 3D is handled by toggle3D's flyTo (which
@@ -1149,6 +1189,7 @@ export default function IndiaMap() {
       >
         {isFullscreen ? "⤡ Exit" : "⛶ Full"}
       </button>
+      <RailInfraControl />
       <TrainSearch
         trains={searchDefs}
         onSelect={(t) => selectTrain(t.number)}

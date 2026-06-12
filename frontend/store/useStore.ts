@@ -9,6 +9,7 @@ import { proposeResolution } from "@/lib/optimizer";
 import { parseCommand, intentEcho, NLIntent } from "@/lib/nlCommand";
 import { LiveClient } from "@/lib/liveClient";
 import type { TwinSnapshotDTO, NetworkDTO, LiveStatusDTO } from "@/lib/contract";
+import type { OrmStyle } from "@/lib/ormOverlay";
 import type {
   AlertItem,
   Conflict,
@@ -237,6 +238,9 @@ interface State {
   trackTrain: string | null;
   cascade: CascadeResult | null;
   passengerLayer: boolean;
+  /** OpenRailwayMap infrastructure overlay (off | standard | maxspeed | signals | electrification). */
+  ormStyle: OrmStyle;
+  ormOpacity: number;
   nlLog: NLLog[];
   injectNotice: string | null;
 
@@ -264,6 +268,8 @@ interface State {
   showCascade: (n: string) => void;
   clearCascade: () => void;
   togglePassengerLayer: () => void;
+  setOrmStyle: (s: OrmStyle) => void;
+  setOrmOpacity: (o: number) => void;
 
   setFitRoute: (codes: string[] | null) => void;
 
@@ -468,6 +474,8 @@ export const useStore = create<State>((set, get) => ({
   trackTrain: null,
   cascade: null,
   passengerLayer: false,
+  ormStyle: "off",
+  ormOpacity: 0.85,
   nlLog: [],
   fitRoute: null,
 
@@ -795,6 +803,8 @@ export const useStore = create<State>((set, get) => ({
   },
   clearCascade: () => set({ cascade: null }),
   togglePassengerLayer: () => set({ passengerLayer: !get().passengerLayer }),
+  setOrmStyle: (s) => set({ ormStyle: s }),
+  setOrmOpacity: (o) => set({ ormOpacity: Math.min(1, Math.max(0.3, o)) }),
   setFitRoute: (codes) => set({ fitRoute: codes }),
 
   requestMapReset: () => set({ mapResetSeq: get().mapResetSeq + 1 }),
