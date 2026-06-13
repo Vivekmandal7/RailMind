@@ -4,6 +4,8 @@
 
 A live digital-twin control room for railway operations — real track geometry, schedule-accurate train motion at India scale, and an eight-module AI pipeline that detects conflicts, optimizes with OR-Tools, verifies with multi-LLM consensus, and explains every decision.
 
+**Repository:** [github.com/Vivekmandal7/RailMind](https://github.com/Vivekmandal7/RailMind)
+
 <p align="center">
   <img src="docs/assets/demo.gif" alt="RailMind Demo Mode — block ghat scenario, AI pipeline, auto-apply" width="920" />
 </p>
@@ -152,8 +154,8 @@ India-wide map scale: [`backend/config/india_wide.yaml`](backend/config/india_wi
 ### 1. Clone and configure
 
 ```bash
-git clone https://github.com/your-org/railmind.git
-cd railmind
+git clone git@github.com:Vivekmandal7/RailMind.git
+cd RailMind
 
 cp backend/.env.example backend/.env          # optional LLM keys
 cp frontend/.env.example frontend/.env.local  # optional Firebase analytics
@@ -283,7 +285,7 @@ Firebase `NEXT_PUBLIC_*` values are **client-side web keys** (designed to be pub
 
 ## Team
 
-Built by **[yuum.ai](https://yuum.ai)** for **Far Away 2026**.
+Built by **[Vivek Mandal](https://github.com/Vivekmandal7)** and **[yuum.ai](https://yuum.ai)** for **Far Away 2026**.
 
 ---
 
