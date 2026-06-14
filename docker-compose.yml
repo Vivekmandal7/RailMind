@@ -7,8 +7,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      # set OPENAI_API_KEY here to enable the optional LLM what-if phrasing
+      # Pass via a local .env file at repo root (gitignored) — never commit real keys
+      - RAILMIND_CONFIG=${RAILMIND_CONFIG:-config/india_wide.yaml}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - RAILMIND_RAPIDAPI_KEY=${RAILMIND_RAPIDAPI_KEY:-}
+      - RAILMIND_RAPIDAPI_HOST=${RAILMIND_RAPIDAPI_HOST:-indian-railway-irctc.p.rapidapi.com}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status==200 else 1)"]
       interval: 5s
@@ -22,5 +26,6 @@ services:
     environment:
       # the browser connects directly to the engine, so this is the host URL
       - NEXT_PUBLIC_BACKEND_URL=http://127.0.0.1:8000
+      - NEXT_PUBLIC_MAPBOX_TOKEN=${NEXT_PUBLIC_MAPBOX_TOKEN:-}
     depends_on:
       - backend

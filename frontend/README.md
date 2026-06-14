@@ -1,13 +1,15 @@
 # Frontend
 
-The RailMind operator control room lives in this directory (Next.js 14 · React · TypeScript · deck.gl).
+The RailMind operator control room (Next.js 14 · React · TypeScript · Mapbox GL · deck.gl).
 
-**Full documentation, quickstart, architecture, and demo instructions:** see the [root README](../README.md).
+**Full documentation, judge demo script, and architecture:** [root README](../README.md)
 
 ```bash
 npm install
-cp .env.example .env.local   # optional — backend URL + Firebase analytics
+cp .env.example .env.local   # add NEXT_PUBLIC_MAPBOX_TOKEN (required) + optional Firebase
 npm run dev                  # http://localhost:3000
 ```
 
-The UI auto-detects the Python engine at `NEXT_PUBLIC_BACKEND_URL`. Without it, a local in-browser simulation fallback keeps every panel working.
+Requires `NEXT_PUBLIC_MAPBOX_TOKEN` in `.env.local` for the basemap. The UI connects to the Python engine at `NEXT_PUBLIC_BACKEND_URL`; without it, a local in-browser simulation fallback keeps every panel working.
+
+For judge presentations use `./demo.sh` from the repo root (production build, no dev overlay).
