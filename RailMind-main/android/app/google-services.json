@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "333975996524",
+    "project_id": "railway-de499",
+    "storage_bucket": "railway-de499.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:333975996524:android:b325d3c1a5efd940407049",
+        "android_client_info": {
+          "package_name": "com.example.railmind"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUyd2shsMCrzayc0fgdxJYtn_7AfFL7ac"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
