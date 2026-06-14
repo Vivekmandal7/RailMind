@@ -26,6 +26,7 @@ class _MapScreenState extends ConsumerState<MapScreen>
   int _mapStyleIndex = 0;
   bool _didInitialFit = false;
   bool _follow = true; // keep the tracked train centered as it moves
+  String? _lastTrackedTrainId;
   Marker? _userMarker;
 
   @override
@@ -82,14 +83,16 @@ class _MapScreenState extends ConsumerState<MapScreen>
 
   String _getTileUrl(bool isDark) {
     if (_mapStyleIndex == 1) {
-      return 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+      return 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
     } else if (_mapStyleIndex == 2) {
       return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
     }
     return isDark
-        ? 'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-        : 'https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
   }
+
+  bool _usesSubdomains() => _mapStyleIndex != 2;
 
   Future<void> _goToMyLocation() async {
     try {
@@ -143,51 +146,58 @@ class _MapScreenState extends ConsumerState<MapScreen>
                 color: theme.colorScheme.primary)),
         actions: [_CorridorMenu()],
       ),
-      body: selectedTrain == null
-          ? _buildPlaceholder(routesAsync, theme)
-          : _buildMap(context, theme, isDark, selectedTrain),
+      body: routesAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => _buildErrorState(theme),
+        data: (routes) {
+          if (routes.isEmpty) {
+            return _buildEmptyState(theme);
+          }
+          final train = selectedTrain ?? routes.first;
+          return _buildMap(context, theme, isDark, train);
+        },
+      ),
     );
   }
 
-  Widget _buildPlaceholder(
-      AsyncValue<List<TrainRoute>> routesAsync, ThemeData theme) {
-    return routesAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.cloud_off,
-                  size: 48, color: theme.colorScheme.onSurfaceVariant),
-              const SizedBox(height: 12),
-              Text('Could not reach the live feed',
-                  style: theme.textTheme.titleMedium),
-              const SizedBox(height: 6),
-              Text('Pull to retry or check that the backend is running.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(liveFrameProvider),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      ),
-      data: (routes) => Center(
+  Widget _buildErrorState(ThemeData theme) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.train_outlined,
+            Icon(Icons.cloud_off,
                 size: 48, color: theme.colorScheme.onSurfaceVariant),
             const SizedBox(height: 12),
-            Text('No active trains right now',
+            Text('Could not load live trains',
                 style: theme.textTheme.titleMedium),
+            const SizedBox(height: 6),
+            Text('Pull to retry or check that the backend is running.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => ref.invalidate(liveFrameProvider),
+              child: const Text('Retry'),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(ThemeData theme) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.train_outlined,
+              size: 48, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(height: 12),
+          Text('No active trains right now',
+              style: theme.textTheme.titleMedium),
+        ],
       ),
     );
   }
@@ -203,6 +213,12 @@ class _MapScreenState extends ConsumerState<MapScreen>
 
     // Center on the train initially, then keep following it as it moves so the
     // live motion is unmistakable. The user can pan to break follow.
+    if (_lastTrackedTrainId != selectedTrain.id) {
+      _lastTrackedTrainId = selectedTrain.id;
+      _didInitialFit = false;
+      _follow = true;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (!_didInitialFit) {
@@ -236,7 +252,9 @@ class _MapScreenState extends ConsumerState<MapScreen>
               TileLayer(
                 urlTemplate: _getTileUrl(isDark),
                 userAgentPackageName: 'com.example.railmind',
-                subdomains: const ['a', 'b', 'c', 'd'],
+                subdomains: _usesSubdomains()
+                    ? const ['a', 'b', 'c', 'd']
+                    : const <String>[],
               ),
               PolylineLayer(
                 polylines: [
@@ -488,7 +506,7 @@ class _MapScreenState extends ConsumerState<MapScreen>
         child: SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 86),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,

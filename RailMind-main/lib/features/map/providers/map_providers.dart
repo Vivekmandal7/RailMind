@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/services.dart' show rootBundle;
@@ -72,9 +73,12 @@ final liveFrameProvider = StreamProvider.autoDispose<LiveFrame>((ref) async* {
   ref.watch(corridorKeyProvider); // re-run when the corridor changes
   final api = ref.watch(apiServiceProvider);
 
+  // Load offline geometry first so the map can render even if the backend is slow.
+  final offlineNetwork = await _loadOfflineNetwork();
+
   final online = await api.ping();
   if (!online) {
-    yield* _offlineStream(ref, await _loadOfflineNetwork());
+    yield* _offlineStream(ref, offlineNetwork);
     return;
   }
 
@@ -82,21 +86,30 @@ final liveFrameProvider = StreamProvider.autoDispose<LiveFrame>((ref) async* {
   try {
     network = await api.fetchNetwork();
   } catch (_) {
-    yield* _offlineStream(ref, await _loadOfflineNetwork());
+    yield* _offlineStream(ref, offlineNetwork);
     return;
   }
 
-  // 1) try the WebSocket stream
+  // 1) try the WebSocket stream — require a first frame within the connect timeout
   final svc = LiveStreamService();
   ref.onDispose(svc.dispose);
+  var gotLiveFrame = false;
   try {
-    await for (final snap in svc.connect()) {
+    final stream = svc.connect();
+    final first = await stream.first.timeout(AppConfig.connectTimeout);
+    gotLiveFrame = true;
+    yield LiveFrame(network, first, LiveMode.live);
+    await for (final snap in stream) {
       yield LiveFrame(network, snap, LiveMode.live);
     }
+  } on TimeoutException {
+    // socket opened but never pushed a snapshot — fall through
   } catch (_) {
     // socket failed / dropped — fall through to polling
   }
   svc.dispose();
+
+  if (gotLiveFrame) return;
 
   // 2) poll REST while the backend stays reachable
   while (true) {
@@ -105,7 +118,7 @@ final liveFrameProvider = StreamProvider.autoDispose<LiveFrame>((ref) async* {
       yield LiveFrame(network, snap, LiveMode.polling);
     } catch (_) {
       // 3) backend went away mid-session — offline sim
-      yield* _offlineStream(ref, await _loadOfflineNetwork());
+      yield* _offlineStream(ref, offlineNetwork);
       return;
     }
     await Future<void>.delayed(AppConfig.pollInterval);

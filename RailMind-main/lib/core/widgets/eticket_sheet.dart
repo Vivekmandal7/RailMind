@@ -74,16 +74,17 @@ class _ETicketSheet extends StatelessWidget {
     final onTime = ticket.status.toUpperCase() == 'ON TIME';
 
     return SafeArea(
-      child: Container(
-        margin: const EdgeInsets.all(12),
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+      child: SingleChildScrollView(
+        child: Container(
+          margin: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             Container(
               width: 48,
               height: 4,
@@ -147,6 +148,8 @@ class _ETicketSheet extends StatelessWidget {
               style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold, color: theme.colorScheme.secondary),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 12),
             Row(
@@ -206,6 +209,7 @@ class _ETicketSheet extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -227,6 +231,8 @@ class _ETicketSheet extends StatelessWidget {
                   ?.copyWith(fontWeight: FontWeight.bold)),
           Text(station,
               textAlign: end ? TextAlign.end : TextAlign.start,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 12)),
         ],
       ),

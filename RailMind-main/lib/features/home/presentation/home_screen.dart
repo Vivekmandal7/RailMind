@@ -679,13 +679,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            NeonIconBadge(icon: icon, color: color, size: 42),
-            const SizedBox(height: 14),
+            NeonIconBadge(icon: icon, color: color, size: 38),
+            const SizedBox(height: 10),
             Text(title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w800, fontSize: 14.5)),
+                    ?.copyWith(fontWeight: FontWeight.w800, fontSize: 13.5)),
             const SizedBox(height: 2),
-            Text(sub, style: TextStyle(color: textMuted, fontSize: 11.5)),
+            Text(sub,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: textMuted, fontSize: 11, height: 1.2)),
           ],
         ),
       );
@@ -697,7 +702,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 14,
       crossAxisSpacing: 14,
-      childAspectRatio: 1.55,
+      childAspectRatio: 1.22,
       children: [
         tile(Icons.confirmation_number_outlined, 'PNR Status', 'Check booking',
             AppTheme.neonAlt, () => showPnrSheet(context)),

@@ -43,18 +43,25 @@ const _menu = [
 class _SheetShell extends StatelessWidget {
   const _SheetShell({required this.child});
   final Widget child;
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return SafeArea(
-      child: Container(
-        margin: const EdgeInsets.all(12),
-        padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(24),
+    return Padding(
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SafeArea(
+        child: Container(
+          margin: const EdgeInsets.all(12),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: child,
         ),
-        child: child,
       ),
     );
   }
@@ -90,9 +97,13 @@ class _FoodOrderSheetState extends ConsumerState<_FoodOrderSheet> {
             children: [
               Icon(Icons.fastfood, color: theme.colorScheme.secondary),
               const SizedBox(width: 8),
-              Text('Order Food',
+              Expanded(
+                child: Text(
+                  'Order Food',
                   style: theme.textTheme.titleLarge
-                      ?.copyWith(fontWeight: FontWeight.bold)),
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
             ],
           ),
           Text(
@@ -102,7 +113,7 @@ class _FoodOrderSheetState extends ConsumerState<_FoodOrderSheet> {
             style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 12),
-          Flexible(
+          Expanded(
             child: ListView.separated(
               shrinkWrap: true,
               itemCount: _menu.length,
@@ -120,6 +131,8 @@ class _FoodOrderSheetState extends ConsumerState<_FoodOrderSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(item.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                   fontWeight: FontWeight.w600)),
                           Text('₹${item.price}',
@@ -130,14 +143,20 @@ class _FoodOrderSheetState extends ConsumerState<_FoodOrderSheet> {
                       ),
                     ),
                     IconButton(
+                      visualDensity: VisualDensity.compact,
                       onPressed: qty == 0
                           ? null
                           : () => setState(() => _qty[item.name] = qty - 1),
                       icon: const Icon(Icons.remove_circle_outline),
                     ),
-                    Text('$qty',
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    SizedBox(
+                      width: 24,
+                      child: Text('$qty',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                    ),
                     IconButton(
+                      visualDensity: VisualDensity.compact,
                       onPressed: () => setState(() => _qty[item.name] = qty + 1),
                       icon: const Icon(Icons.add_circle),
                       color: theme.colorScheme.secondary,
@@ -150,10 +169,14 @@ class _FoodOrderSheetState extends ConsumerState<_FoodOrderSheet> {
           const SizedBox(height: 8),
           Row(
             children: [
-              Text('Total: ₹$_total',
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold)),
-              const Spacer(),
+              Flexible(
+                child: Text('Total: ₹$_total',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 8),
               ElevatedButton.icon(
                 onPressed: _total == 0
                     ? null
@@ -216,76 +239,90 @@ class _LoungeSheetState extends ConsumerState<_LoungeSheet> {
     final theme = Theme.of(context);
     final price = _guests * 250;
     return _SheetShell(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.hotel, color: theme.colorScheme.secondary),
-              const SizedBox(width: 8),
-              Text('Executive Lounge',
-                  style: theme.textTheme.titleLarge
-                      ?.copyWith(fontWeight: FontWeight.bold)),
-            ],
-          ),
-          Text('Pre-book premium lounge access',
-              style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 16),
-          _dropdown('Station', _station, _stations,
-              (v) => setState(() => _station = v)),
-          const SizedBox(height: 12),
-          _dropdown(
-              'Time slot', _slot, _slots, (v) => setState(() => _slot = v)),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Text('Guests', style: TextStyle(fontWeight: FontWeight.w600)),
-              const Spacer(),
-              IconButton(
-                onPressed: _guests <= 1
-                    ? null
-                    : () => setState(() => _guests--),
-                icon: const Icon(Icons.remove_circle_outline),
-              ),
-              Text('$_guests',
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-              IconButton(
-                onPressed: _guests >= 6 ? null : () => setState(() => _guests++),
-                icon: Icon(Icons.add_circle, color: theme.colorScheme.secondary),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                await ref.read(localStorageServiceProvider).addServiceOrder({
-                  'type': 'lounge',
-                  'station': _station,
-                  'slot': _slot,
-                  'guests': _guests,
-                  'total': price,
-                  'placedAt': DateTime.now().toIso8601String(),
-                });
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text(
-                          'Lounge booked at $_station, $_slot • ₹$price')));
-                }
-              },
-              icon: const Icon(Icons.check),
-              label: Text('Book Lounge • ₹$price'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.secondary,
-                foregroundColor: const Color(0xFF042424),
-                padding: const EdgeInsets.symmetric(vertical: 14),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.hotel, color: theme.colorScheme.secondary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Executive Lounge',
+                    style: theme.textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            Text('Pre-book premium lounge access',
+                style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 16),
+            _dropdown('Station', _station, _stations,
+                (v) => setState(() => _station = v)),
+            const SizedBox(height: 12),
+            _dropdown(
+                'Time slot', _slot, _slots, (v) => setState(() => _slot = v)),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Text('Guests',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+                const Spacer(),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  onPressed:
+                      _guests <= 1 ? null : () => setState(() => _guests--),
+                  icon: const Icon(Icons.remove_circle_outline),
+                ),
+                SizedBox(
+                  width: 24,
+                  child: Text('$_guests',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  onPressed:
+                      _guests >= 6 ? null : () => setState(() => _guests++),
+                  icon: Icon(Icons.add_circle,
+                      color: theme.colorScheme.secondary),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  await ref.read(localStorageServiceProvider).addServiceOrder({
+                    'type': 'lounge',
+                    'station': _station,
+                    'slot': _slot,
+                    'guests': _guests,
+                    'total': price,
+                    'placedAt': DateTime.now().toIso8601String(),
+                  });
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(
+                            'Lounge booked at $_station, $_slot • ₹$price')));
+                  }
+                },
+                icon: const Icon(Icons.check),
+                label: Text('Book Lounge • ₹$price'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.secondary,
+                  foregroundColor: const Color(0xFF042424),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

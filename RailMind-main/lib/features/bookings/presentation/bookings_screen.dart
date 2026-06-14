@@ -97,7 +97,7 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> with SingleTick
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 110),
       itemCount: upcoming.length,
       separatorBuilder: (context, index) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
@@ -113,20 +113,26 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> with SingleTick
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.train, color: AppTheme.neon, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${trip['trainId'] ?? ''} ${(trip['trainName'] ?? '').toString().toUpperCase()}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
+                    Flexible(
+                      child: Row(
+                        children: [
+                          const Icon(Icons.train, color: AppTheme.neon, size: 20),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              '${trip['trainId'] ?? ''} ${(trip['trainName'] ?? '').toString().toUpperCase()}',
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
@@ -279,7 +285,7 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> with SingleTick
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 110),
       itemCount: past.length,
       separatorBuilder: (context, index) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
