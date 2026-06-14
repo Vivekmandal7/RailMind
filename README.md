@@ -7,7 +7,11 @@ A live digital-twin control room for railway operations — real OSM track geome
 **Repository:** [github.com/Vivekmandal7/RailMind](https://github.com/Vivekmandal7/RailMind) · **Built for [Far Away 2026](https://yuum.ai)**
 
 <p align="center">
-  <img src="docs/assets/demo.gif" alt="RailMind Demo Mode — block ghat scenario, AI pipeline, auto-apply" width="920" />
+  <img src="docs/assets/demo.gif" alt="RailMind live satellite map — 3D train follow, OpenRailwayMap overlay, moving trains on real Mumbai corridor geometry" width="920" />
+</p>
+
+<p align="center">
+  <em>Real capture from the running app — satellite basemap, NTES live feed, 3D follow, and OpenRailwayMap infrastructure on the Mumbai CSMT–Igatpuri corridor.</em>
 </p>
 
 <p align="center">
@@ -82,8 +86,8 @@ RailMind is an **operator control room + digital-twin engine**:
 | **Passenger app** | Flutter mobile client in `RailMind-main/` — search, bookings, live map, AI assistant |
 
 <p float="left">
-  <img src="docs/assets/control-room.png" alt="Control room overview" width="440" />
-  <img src="docs/assets/demo-conflicts.png" alt="Conflicts and demo captions" width="440" />
+  <img src="docs/assets/live-satellite.png" alt="Satellite view with live trains, OpenRailwayMap tracks, and train detail panel" width="440" />
+  <img src="docs/assets/demo-conflicts.png" alt="Live collision-risk alerts with AI OR-Tools resolution on satellite map" width="440" />
 </p>
 
 <p align="center">
